@@ -38,8 +38,9 @@ export default function HowToPlay() {
         <h3>A round</h3>
         <ul>
           <li>
-            <strong>Night.</strong> Everyone closes their eyes (for real). Mafia, detective, and
-            doctor act secretly on their own phones.
+            <strong>Night.</strong> Everyone looks at their own phone — each screen shows only what
+            your role may do. Mafia pick a victim, the detective investigates, the doctor protects,
+            everyone else waits. Morning comes by itself once all roles have acted.
           </li>
           <li>
             <strong>Day.</strong> The Gazette announces who died. Argue out loud about who looks
