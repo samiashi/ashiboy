@@ -14,6 +14,20 @@ export const AVATARS = [
   '🐺',
   '🐰',
   '🦜',
+  '🐯',
+  '🦝',
+  '🐨',
+  '🦘',
+  '🦔',
+  '🦇',
+  '🐬',
+  '🦩',
+  '🦚',
+  '🦋',
+  '🐞',
+  '🐌',
+  '🐒',
+  '🦍',
 ] as const;
 
 export function randomAvatar(): string {

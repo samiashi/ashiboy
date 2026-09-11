@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { m } from 'motion/react';
 import type { StoredSession } from '@/games/mafia/net/persistence';
-import { fadeUp, popIn, staggerParent } from '@/anim';
+import { fadeUp, popIn, springSnappy, staggerParent } from '@/anim';
 import { AVATARS, randomAvatar } from '@/games/mafia/ui/avatars';
 import HowToPlay from '@/games/mafia/ui/HowToPlay';
 
@@ -34,6 +34,9 @@ export default function Home({
   const [avatar, setAvatar] = useState(prefillAvatar || randomAvatar());
   const [code, setCode] = useState(prefillCode);
   const nameOk = name.trim().length > 0;
+  // Creating and joining are mutually exclusive paths: typing a code (or
+  // arriving with one from an invite link) means you're joining, not hosting.
+  const joining = code.trim().length > 0;
 
   return (
     <div className="app">
@@ -98,9 +101,22 @@ export default function Home({
           ))}
         </m.div>
 
+        <m.div className="profile-preview" variants={fadeUp} aria-live="polite">
+          <m.span
+            key={avatar}
+            className="profile-preview-avatar"
+            initial={{ scale: 0.5, rotate: -12 }}
+            animate={{ scale: 1, rotate: 0 }}
+            transition={springSnappy}
+          >
+            {avatar}
+          </m.span>
+          <span className="profile-preview-name">{name.trim() || 'Your name'}</span>
+        </m.div>
+
         <m.button
           className="btn btn-primary"
-          disabled={!nameOk || connecting}
+          disabled={!nameOk || connecting || joining}
           onClick={() => onCreate(name, avatar)}
           variants={fadeUp}
           whileTap={{ scale: 0.97 }}

@@ -107,7 +107,17 @@ export function buzz(pattern: number | number[]): void {
 }
 
 export type SoundName =
-  'join' | 'role' | 'night' | 'death' | 'peace' | 'gavel' | 'vote' | 'thud' | 'win' | 'lose';
+  | 'join'
+  | 'role'
+  | 'night'
+  | 'death'
+  | 'peace'
+  | 'gavel'
+  | 'vote'
+  | 'thud'
+  | 'tick'
+  | 'win'
+  | 'lose';
 
 export function playSound(name: SoundName): void {
   if (muted) return;
@@ -144,6 +154,9 @@ export function playSound(name: SoundName): void {
     case 'thud':
       tone(95, { dur: 0.3, gain: 0.2 });
       noise(0.15, 300, 0.1);
+      break;
+    case 'tick':
+      tone(1400, { dur: 0.04, type: 'square', gain: 0.05 });
       break;
     case 'win':
       [523, 659, 784, 1047].forEach((f, i) =>

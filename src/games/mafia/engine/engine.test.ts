@@ -26,8 +26,18 @@ function everyoneReady(s: GameState) {
 
 describe('lobby & setup', () => {
   it('suggests sensible configs', () => {
-    expect(suggestConfig(3)).toEqual({ mafiaCount: 1, hasDetective: false, hasDoctor: false });
-    expect(suggestConfig(5)).toEqual({ mafiaCount: 1, hasDetective: true, hasDoctor: true });
+    expect(suggestConfig(3)).toEqual({
+      mafiaCount: 1,
+      hasDetective: false,
+      hasDoctor: false,
+      discussionSeconds: 180,
+    });
+    expect(suggestConfig(5)).toEqual({
+      mafiaCount: 1,
+      hasDetective: true,
+      hasDoctor: true,
+      discussionSeconds: 180,
+    });
     expect(suggestConfig(8).mafiaCount).toBe(2);
     expect(suggestConfig(12).mafiaCount).toBe(3);
   });
@@ -277,6 +287,62 @@ describe('host skip (anti-stall)', () => {
     });
     s = everyoneReady(s);
     expect(run(s, { t: 'skipNight', id: 'p1' })).toBe(s);
+  });
+});
+
+describe('discussion timer', () => {
+  const NOW = 1_000_000;
+  const runAt = (s: GameState, a: Action, now: number) => reduce(s, a, rng, now);
+
+  function toDiscussion(discussionSeconds = 180) {
+    let s = makeGame(['A', 'B', 'C', 'D', 'E'], {
+      mafiaCount: 1,
+      hasDetective: false,
+      hasDoctor: false,
+      discussionSeconds,
+    });
+    s = everyoneReady(s);
+    const [mafia] = byRole(s, 'mafia');
+    const [victim] = byRole(s, 'villager');
+    s = run(s, { t: 'nightAct', id: mafia, targetId: victim });
+    return runAt(s, { t: 'advance', id: 'p0' }, NOW); // dayReveal -> discussion
+  }
+
+  it('sets a deadline on entering discussion', () => {
+    const s = toDiscussion(120);
+    expect(s.phase).toBe('discussion');
+    expect(s.discussionEndsAt).toBe(NOW + 120_000);
+  });
+
+  it('leaves the timer off when configured to 0', () => {
+    const s = toDiscussion(0);
+    expect(s.phase).toBe('discussion');
+    expect(s.discussionEndsAt).toBeUndefined();
+  });
+
+  it('lets the host advance early, but nobody else until expiry', () => {
+    const s = toDiscussion(120);
+    const guest = s.players.find((p) => !p.isHost)!;
+    expect(runAt(s, { t: 'advance', id: guest.id }, NOW + 10_000).phase).toBe('discussion');
+    expect(runAt(s, { t: 'advance', id: guest.id }, NOW + 120_000).phase).toBe('voting');
+    expect(runAt(s, { t: 'advance', id: 'p0' }, NOW + 10_000).phase).toBe('voting');
+  });
+
+  it('host extend pushes the deadline by a minute', () => {
+    let s = toDiscussion(60);
+    s = runAt(s, { t: 'extendDiscussion', id: 'p0' }, NOW + 10_000);
+    expect(s.discussionEndsAt).toBe(NOW + 120_000);
+    const guest = s.players.find((p) => !p.isHost)!;
+    expect(runAt(s, { t: 'extendDiscussion', id: guest.id }, NOW + 10_000)).toBe(s);
+    const untimed = toDiscussion(0);
+    expect(runAt(untimed, { t: 'extendDiscussion', id: 'p0' }, NOW)).toBe(untimed);
+  });
+
+  it('exposes the deadline to every device during discussion', () => {
+    const s = toDiscussion(60);
+    const v = viewFor(s, s.players[1].id);
+    expect(v.discussionEndsAt).toBe(NOW + 60_000);
+    expect(v.discussionDurationSec).toBe(60);
   });
 });
 

@@ -11,6 +11,18 @@ interface Props {
   send(msg: ClientMessage): void;
 }
 
+const DISCUSSION_PRESETS = [
+  { label: 'Off', seconds: 0 },
+  { label: '1:00', seconds: 60 },
+  { label: '2:00', seconds: 120 },
+  { label: '3:00', seconds: 180 },
+  { label: '5:00', seconds: 300 },
+];
+
+function formatClock(totalSeconds: number): string {
+  return `${Math.floor(totalSeconds / 60)}:${String(totalSeconds % 60).padStart(2, '0')}`;
+}
+
 export default function Lobby({ view, roomCode, send }: Props) {
   const isHost = view.me.isHost;
   const n = view.players.length;
@@ -24,6 +36,9 @@ export default function Lobby({ view, roomCode, send }: Props) {
   const [copied, setCopied] = useState(false);
 
   const inviteLink = `${location.origin}${location.pathname}#/mafia?join=${roomCode}`;
+
+  const setDiscussion = (seconds: number) =>
+    send({ t: 'setConfig', config: { ...config, discussionSeconds: seconds } });
 
   const copyLink = async () => {
     try {
@@ -138,14 +153,31 @@ export default function Lobby({ view, roomCode, send }: Props) {
               />
               Doctor
             </m.label>
+            <m.p className="muted picker-label" variants={fadeUp}>
+              Discussion timer
+            </m.p>
+            <m.div className="preset-row" variants={fadeUp}>
+              {DISCUSSION_PRESETS.map((preset) => (
+                <button
+                  key={preset.label}
+                  className={`pill-btn${config.discussionSeconds === preset.seconds ? ' pill-btn-selected' : ''}`}
+                  onClick={() => setDiscussion(preset.seconds)}
+                >
+                  {preset.label}
+                </button>
+              ))}
+            </m.div>
           </>
         ) : null}
         <m.p className="muted setup-summary" variants={fadeUp}>
           {mafia} mafia
           {config.hasDetective && specials <= town ? ', 1 detective' : ''}
           {config.hasDoctor && specials <= town ? ', 1 doctor' : ''}
-          {villagers > 0 ? `, ${villagers} villager${villagers === 1 ? '' : 's'}` : ''} · suggested
-          for {n}: {suggestConfig(n).mafiaCount} mafia
+          {villagers > 0 ? `, ${villagers} villager${villagers === 1 ? '' : 's'}` : ''} ·{' '}
+          {config.discussionSeconds > 0
+            ? `${formatClock(config.discussionSeconds)} discussion`
+            : 'untimed discussion'}{' '}
+          · suggested for {n}: {suggestConfig(n).mafiaCount} mafia
         </m.p>
         {isHost ? (
           <m.button

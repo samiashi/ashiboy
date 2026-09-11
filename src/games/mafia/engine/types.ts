@@ -27,6 +27,8 @@ export interface GameConfig {
   mafiaCount: number;
   hasDetective: boolean;
   hasDoctor: boolean;
+  /** Discussion length in seconds. 0 = untimed (host advances manually). */
+  discussionSeconds: number;
 }
 
 export interface NightState {
@@ -46,6 +48,8 @@ export interface GameState {
   votes: Record<string, string | null>;
   /** diedId undefined => nobody died (saved or mafia picked no one) */
   lastNight?: { diedId?: string };
+  /** Host-clock deadline (epoch ms) for the discussion phase. Absent when untimed. */
+  discussionEndsAt?: number;
   lastInvestigation?: { targetId: string; isMafia: boolean };
   lastVote?: { eliminatedId?: string; tie: boolean };
   winner?: 'mafia' | 'town';
@@ -62,6 +66,7 @@ export type Action =
   | { t: 'ackRole'; id: string }
   | { t: 'nightAct'; id: string; targetId: string }
   | { t: 'advance'; id: string }
+  | { t: 'extendDiscussion'; id: string }
   | { t: 'skipNight'; id: string }
   | { t: 'closeVote'; id: string }
   | { t: 'vote'; id: string; targetId: string | null }
@@ -78,6 +83,7 @@ export type ClientMessage =
   | { t: 'ackRole' }
   | { t: 'nightAct'; targetId: string }
   | { t: 'advance' }
+  | { t: 'extendDiscussion' }
   | { t: 'skipNight' }
   | { t: 'closeVote' }
   | { t: 'vote'; targetId: string | null }
@@ -117,6 +123,9 @@ export interface PlayerView {
   /** how many night actors still need to act */
   nightPending?: number;
   lastNight?: { diedId?: string };
+  /** Discussion deadline + original length (discussion phase only, public info). */
+  discussionEndsAt?: number;
+  discussionDurationSec?: number;
   /** detective only */
   investigation?: { targetId: string; isMafia: boolean };
   votes?: Record<string, string | null>;

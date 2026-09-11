@@ -56,6 +56,37 @@ describe('Home', () => {
     expect(onJoin).toHaveBeenCalledWith('ABC123', 'Sam', '🐙');
   });
 
+  it('disables Create while a join code is being entered', async () => {
+    const user = userEvent.setup();
+    render(<Home {...baseProps} />);
+
+    await user.type(screen.getByPlaceholderText('Your name'), 'Sam');
+    const create = screen.getByRole('button', { name: 'Create a game' });
+    expect(create).toBeEnabled();
+    await user.type(screen.getByPlaceholderText('CODE'), 'ABC123');
+    expect(create).toBeDisabled();
+    await user.clear(screen.getByPlaceholderText('CODE'));
+    expect(create).toBeEnabled();
+  });
+
+  it('disables Create when arriving via an invite link', () => {
+    render(<Home {...baseProps} prefillCode="ABC123" prefillName="Sam" />);
+    expect(screen.getByRole('button', { name: 'Create a game' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Join' })).toBeEnabled();
+  });
+
+  it('previews the chosen name and avatar live', async () => {
+    const user = userEvent.setup();
+    render(<Home {...baseProps} />);
+
+    const preview = () => document.querySelector('.profile-preview');
+    expect(preview()?.textContent).toContain('Your name');
+    await user.type(screen.getByPlaceholderText('Your name'), 'Sam');
+    expect(preview()?.textContent).toContain('Sam');
+    await user.click(screen.getByRole('button', { name: 'avatar 🐸' }));
+    expect(preview()?.textContent).toContain('🐸');
+  });
+
   it('keeps Join disabled until the code is complete', async () => {
     const user = userEvent.setup();
     render(<Home {...baseProps} />);

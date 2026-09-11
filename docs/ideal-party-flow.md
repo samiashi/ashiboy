@@ -83,8 +83,10 @@ optional, remembered next visit. No validation beyond non-empty.
 ### 6. Discussion — the humans talk
 
 - Free-form (out loud — the app stays out of the way), with the alive roster
-  visible and one obvious way to proceed. A timer is a nice-to-have, never
-  a blocker.
+  visible and one obvious way to proceed.
+- Configurable countdown (default 3:00, host can extend, skip, or disable).
+  Every device counts down from the host-set deadline; expiry opens the vote,
+  with warning ticks in the final seconds.
 
 ### 7. Voting — the elimination
 

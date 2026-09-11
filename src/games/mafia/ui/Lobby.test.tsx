@@ -21,7 +21,7 @@ function lobbyView(me: string, playerList: PublicPlayer[] = players): PlayerView
     round: 0,
     players: playerList,
     me: { id: self.id, name: self.name, isHost: self.isHost, alive: true },
-    config: { mafiaCount: 1, hasDetective: true, hasDoctor: true },
+    config: { mafiaCount: 1, hasDetective: true, hasDoctor: true, discussionSeconds: 180 },
   };
 }
 
@@ -47,7 +47,20 @@ describe('Lobby', () => {
     await user.click(screen.getByText('+'));
     expect(send).toHaveBeenCalledWith({
       t: 'setConfig',
-      config: { mafiaCount: 2, hasDetective: true, hasDoctor: true },
+      config: { mafiaCount: 2, hasDetective: true, hasDoctor: true, discussionSeconds: 180 },
+    });
+  });
+
+  it('sets the discussion timer through presets', async () => {
+    const user = userEvent.setup();
+    const send = vi.fn();
+    render(<Lobby view={lobbyView('h')} roomCode="ABC123" send={send} />);
+
+    expect(screen.getByText(/3:00 discussion/)).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: '5:00' }));
+    expect(send).toHaveBeenCalledWith({
+      t: 'setConfig',
+      config: { mafiaCount: 1, hasDetective: true, hasDoctor: true, discussionSeconds: 300 },
     });
   });
 

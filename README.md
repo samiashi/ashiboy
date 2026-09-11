@@ -53,6 +53,7 @@ and everyone else joins from their own phone with a room code.
 | 🎭  | **Moderator-free** — the app deals roles, narrates the night, counts the votes and crowns the winner. The host plays like everyone else.                                         |
 | 📲  | **Walk away, walk back** — every seat carries a secret rejoin token. Close the tab mid-game, reopen, hit _Rejoin as…_ and you're back with your role intact.                     |
 | ⏭️  | **Never stalls** — if someone pockets their phone mid-night or mid-vote, the host resolves the night or closes the vote. The table always moves.                                 |
+| ⏱️  | **Discussion timer** — configurable countdown (default 3:00) with a live ring, warning ticks, host extend/skip, and automatic vote opening on expiry.                            |
 | 📷  | **QR invites + kick** — flash the code across the room; remove wrong seats from the lobby in one tap.                                                                            |
 | 🔊  | **A showman in your pocket** — night drones, kill stings, vote clicks, a slamming verdict stamp and win/lose jingles. All synthesized, mutable, with haptics on the big moments. |
 | 📖  | **House rules included** — a built-in How to Play card, so the one friend who doesn't know Mafia can catch up in a minute.                                                       |
@@ -133,7 +134,8 @@ Implemented and verified (`tsc`, 33 engine + 19 UI tests, production build all g
   room says so plainly instead of stranding you. The host shows who's offline.
 - ⏭️ **Anti-stall:** the host can resolve a stuck night (missing actors simply
   don't act — counts only, never names) or close a stuck vote (missing voters
-  go uncounted). The host can also remove wrong seats from the lobby.
+  go uncounted). Discussions run on a configurable timer with host extend. The
+  host can also remove wrong seats from the lobby.
 - 📷 **QR invites** in the lobby for instant table-wide joining.
 - 🔊 **Sound effects:** night drone, kill sting, vote clicks, gavel, win/lose
   jingles, lobby join pops — all synthesized, with a mute toggle and haptic
@@ -161,8 +163,7 @@ Known limitations (deliberate for now):
 
 - Game #2 on the hub via `src/games/<name>/` + one registry line.
 - Host resume (persist state so a dropped host can reclaim the room).
-- Discussion timer, custom rule toggles (e.g. doctor self-save limits,
-  majority-vs-plurality lynch).
+- Custom rule toggles (e.g. doctor self-save limits, majority-vs-plurality lynch).
 
 </details>
 

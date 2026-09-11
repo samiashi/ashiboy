@@ -144,6 +144,7 @@
   font-weight: 800;
   font-size: 2.2rem;
   letter-spacing: 2px;
+  text-indent: 2px;
   margin: 0;
 }
 
@@ -258,6 +259,7 @@
   margin: 0;
   font-size: 0.85rem;
   letter-spacing: 2px;
+  text-indent: 2px;
   text-transform: uppercase;
   color: var(--muted);
 }
@@ -451,6 +453,7 @@
   font-weight: 900;
   font-size: 1.15rem;
   letter-spacing: 3px;
+  text-indent: 3px;
   text-align: center;
   border-top: 3px double var(--ink);
   border-bottom: 1px solid var(--ink);
@@ -462,6 +465,7 @@
   text-align: center;
   font-size: 0.75rem;
   letter-spacing: 2px;
+  text-indent: 2px;
   text-transform: uppercase;
   color: #6f6247;
 }
@@ -787,10 +791,41 @@
   text-transform: uppercase;
 }
 
+.profile-preview {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border: 1px dashed var(--border-strong);
+  border-radius: 12px;
+  background: rgba(10, 10, 15, 0.5);
+}
+
+.profile-preview-avatar {
+  font-size: 2.2rem;
+  line-height: 1;
+  filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.5));
+}
+
+.profile-preview-name {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.1rem;
+  letter-spacing: 1px;
+}
+
 .avatar-grid {
   display: grid;
+  /* 28 avatars fill complete rows at both sizes — never a ragged last row. */
   grid-template-columns: repeat(7, 1fr);
   gap: 6px;
+}
+
+@media (max-width: 380px) {
+  .avatar-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
 }
 
 .avatar-option {
@@ -848,6 +883,99 @@
   border-radius: 14px;
   line-height: 0;
   box-shadow: 0 10px 26px rgba(0, 0, 0, 0.45);
+}
+
+/* ---------- discussion timer ---------- */
+
+.preset-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.pill-btn {
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  font-weight: 700;
+  padding: 9px 15px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: rgba(10, 10, 15, 0.6);
+  color: var(--muted);
+  cursor: pointer;
+  transition:
+    transform 0.12s ease,
+    border-color 0.14s ease,
+    color 0.14s ease,
+    box-shadow 0.14s ease;
+}
+
+.pill-btn:active {
+  transform: scale(0.94);
+}
+
+.pill-btn-selected {
+  border-color: var(--gold);
+  color: var(--gold-bright);
+  background: rgba(201, 162, 39, 0.14);
+  box-shadow: 0 0 14px rgba(201, 162, 39, 0.28);
+}
+
+.countdown {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.countdown-ring {
+  position: relative;
+  width: 128px;
+  height: 128px;
+}
+
+.countdown-ring svg {
+  transform: rotate(-90deg);
+  display: block;
+}
+
+.countdown-track {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.1);
+  stroke-width: 9;
+}
+
+.countdown-fill {
+  fill: none;
+  stroke: var(--gold-bright);
+  stroke-width: 9;
+  stroke-linecap: round;
+  transition:
+    stroke-dashoffset 0.25s linear,
+    stroke 0.3s ease;
+  filter: drop-shadow(0 0 8px rgba(201, 162, 39, 0.45));
+}
+
+.countdown-late .countdown-fill {
+  stroke: var(--accent);
+  filter: drop-shadow(0 0 8px rgba(229, 72, 77, 0.5));
+}
+
+.countdown-time {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 1.7rem;
+  letter-spacing: 1px;
+}
+
+.countdown-late .countdown-time {
+  color: var(--accent);
+  animation: breathe 1s ease-in-out infinite;
 }
 
 /* ---------- rejoin & sound ---------- */

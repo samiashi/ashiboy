@@ -46,6 +46,8 @@ export function toAction(playerId: string, msg: ClientMessage): Action | null {
       return { t: 'nightAct', id: playerId, targetId: msg.targetId };
     case 'advance':
       return { t: 'advance', id: playerId };
+    case 'extendDiscussion':
+      return { t: 'extendDiscussion', id: playerId };
     case 'skipNight':
       return { t: 'skipNight', id: playerId };
     case 'closeVote':

@@ -20,6 +20,7 @@ export function suggestConfig(playerCount: number): GameConfig {
     mafiaCount: clamp(Math.round(playerCount / 4), 1, Math.max(1, playerCount - 2)),
     hasDetective: playerCount >= 4,
     hasDoctor: playerCount >= 5,
+    discussionSeconds: 180,
   };
 }
 
@@ -32,7 +33,7 @@ export function createLobby(
   return {
     phase: 'lobby',
     players: [makePlayer(hostId, hostName, avatar, token, true)],
-    config: { mafiaCount: 1, hasDetective: true, hasDoctor: true },
+    config: { mafiaCount: 1, hasDetective: true, hasDoctor: true, discussionSeconds: 180 },
     round: 0,
     night: { mafiaTargets: {} },
     votes: {},
@@ -84,7 +85,12 @@ export function checkWin(players: Player[]): 'mafia' | 'town' | undefined {
  * The single state transition function. Pure and deterministic (pass `rng`
  * for reproducible tests); the host device is the only place it runs.
  */
-export function reduce(state: GameState, action: Action, rng: Rng = Math.random): GameState {
+export function reduce(
+  state: GameState,
+  action: Action,
+  rng: Rng = Math.random,
+  now: number = Date.now(),
+): GameState {
   switch (action.t) {
     case 'join': {
       if (state.phase !== 'lobby' || state.players.length >= MAX_PLAYERS) return state;
@@ -146,6 +152,7 @@ export function reduce(state: GameState, action: Action, rng: Rng = Math.random)
           mafiaCount: clamp(Math.round(action.config.mafiaCount) || 1, 1, max),
           hasDetective: !!action.config.hasDetective,
           hasDoctor: !!action.config.hasDoctor,
+          discussionSeconds: Math.max(0, Math.round(action.config.discussionSeconds) || 0),
         },
       };
     }
@@ -216,11 +223,30 @@ export function reduce(state: GameState, action: Action, rng: Rng = Math.random)
 
     case 'advance': {
       const me = findPlayer(state, action.id);
-      if (!me?.isHost) return state;
-      if (state.phase === 'dayReveal') return { ...state, phase: 'discussion' };
-      if (state.phase === 'discussion') return { ...state, phase: 'voting', votes: {} };
-      if (state.phase === 'voteResult') return startNight(state);
+      if (!me) return state;
+      if (state.phase === 'dayReveal') {
+        if (!me.isHost) return state;
+        return beginDiscussion(state, now);
+      }
+      if (state.phase === 'discussion') {
+        // The host may advance anytime; anyone may advance once the timer expires.
+        const expired = state.discussionEndsAt !== undefined && now >= state.discussionEndsAt;
+        if (!me.isHost && !expired) return state;
+        return { ...state, phase: 'voting', votes: {}, discussionEndsAt: undefined };
+      }
+      if (state.phase === 'voteResult') {
+        if (!me.isHost) return state;
+        return startNight(state);
+      }
       return state;
+    }
+
+    case 'extendDiscussion': {
+      const me = findPlayer(state, action.id);
+      if (!me?.isHost || state.phase !== 'discussion' || state.discussionEndsAt === undefined) {
+        return state;
+      }
+      return { ...state, discussionEndsAt: state.discussionEndsAt + 60_000 };
     }
 
     case 'skipNight': {
@@ -272,6 +298,15 @@ export function reduce(state: GameState, action: Action, rng: Rng = Math.random)
   }
 }
 
+function beginDiscussion(state: GameState, now: number): GameState {
+  const seconds = state.config.discussionSeconds;
+  return {
+    ...state,
+    phase: 'discussion',
+    discussionEndsAt: seconds > 0 ? now + seconds * 1000 : undefined,
+  };
+}
+
 function startNight(state: GameState): GameState {
   return {
     ...state,
@@ -281,6 +316,7 @@ function startNight(state: GameState): GameState {
     votes: {},
     lastNight: undefined,
     lastInvestigation: undefined,
+    discussionEndsAt: undefined,
     players: state.players.map((p) => ({ ...p, ready: false })),
   };
 }
@@ -424,6 +460,10 @@ export function viewFor(state: GameState, playerId: string): PlayerView {
 
   // Day phases and beyond.
   view.lastNight = state.lastNight;
+  if (state.phase === 'discussion' && state.discussionEndsAt !== undefined) {
+    view.discussionEndsAt = state.discussionEndsAt;
+    view.discussionDurationSec = state.config.discussionSeconds;
+  }
   if (me.role === 'detective' && state.lastInvestigation) {
     view.investigation = state.lastInvestigation;
   }

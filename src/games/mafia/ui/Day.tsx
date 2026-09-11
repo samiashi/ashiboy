@@ -1,6 +1,91 @@
+import { useEffect, useRef, useState } from 'react';
 import { m } from 'motion/react';
 import { ClientMessage, PlayerView } from '@/games/mafia/engine/types';
 import { fadeUp, springGentle, staggerParent } from '@/anim';
+import { playSound } from '@/games/mafia/sound';
+
+function formatClock(totalSeconds: number): string {
+  return `${Math.floor(totalSeconds / 60)}:${String(totalSeconds % 60).padStart(2, '0')}`;
+}
+
+/**
+ * Live countdown to the discussion deadline. Every device runs its own
+ * ticker from the host-set deadline; the first expiry trigger wins (the
+ * engine ignores the rest). Ticks softly through the final five seconds.
+ */
+function Countdown({
+  endsAt,
+  totalSeconds,
+  isHost,
+  onExpire,
+  onExtend,
+}: {
+  endsAt: number;
+  totalSeconds: number;
+  isHost: boolean;
+  onExpire(): void;
+  onExtend(): void;
+}) {
+  const [now, setNow] = useState(() => Date.now());
+  const fired = useRef(false);
+  const lastTick = useRef(Number.POSITIVE_INFINITY);
+
+  useEffect(() => {
+    const id = window.setInterval(() => setNow(Date.now()), 250);
+    return () => window.clearInterval(id);
+  }, []);
+
+  const remainingMs = Math.max(0, endsAt - now);
+  const remainingSec = Math.ceil(remainingMs / 1000);
+
+  useEffect(() => {
+    if (remainingMs <= 0 && !fired.current) {
+      fired.current = true;
+      onExpire();
+    }
+  }, [remainingMs, onExpire]);
+
+  useEffect(() => {
+    if (remainingSec <= 5 && remainingSec > 0 && remainingSec < lastTick.current) {
+      lastTick.current = remainingSec;
+      playSound('tick');
+    }
+  }, [remainingSec]);
+
+  const totalMs = Math.max(1, totalSeconds * 1000);
+  const fraction = Math.min(1, remainingMs / totalMs);
+  const radius = 56;
+  const circumference = 2 * Math.PI * radius;
+  const late = remainingSec <= 10;
+
+  return (
+    <m.div className={`countdown${late ? ' countdown-late' : ''}`} variants={fadeUp}>
+      <div
+        className="countdown-ring"
+        role="timer"
+        aria-label={`${formatClock(remainingSec)} left to discuss`}
+      >
+        <svg width="128" height="128" viewBox="0 0 128 128" aria-hidden="true">
+          <circle cx="64" cy="64" r={radius} className="countdown-track" />
+          <circle
+            cx="64"
+            cy="64"
+            r={radius}
+            className="countdown-fill"
+            strokeDasharray={circumference}
+            strokeDashoffset={circumference * (1 - fraction)}
+          />
+        </svg>
+        <span className="countdown-time">{formatClock(remainingSec)}</span>
+      </div>
+      {isHost && (
+        <button className="btn btn-ghost btn-mini" onClick={onExtend}>
+          +1:00
+        </button>
+      )}
+    </m.div>
+  );
+}
 
 interface Props {
   view: PlayerView;
@@ -88,6 +173,15 @@ export default function Day({ view, send }: Props) {
         <m.p className="muted center" variants={fadeUp}>
           Talk it out. Who's acting suspicious? Who's defending whom?
         </m.p>
+        {view.discussionEndsAt !== undefined && (
+          <Countdown
+            endsAt={view.discussionEndsAt}
+            totalSeconds={view.discussionDurationSec ?? 0}
+            isHost={view.me.isHost}
+            onExpire={() => send({ t: 'advance' })}
+            onExtend={() => send({ t: 'extendDiscussion' })}
+          />
+        )}
         <ul className="player-list">
           {alive.map((p) => (
             <m.li key={p.id} className="player-row" variants={fadeUp}>
