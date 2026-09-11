@@ -51,6 +51,14 @@ describe('Day discussion timer', () => {
     expect(send).toHaveBeenCalledWith({ t: 'extendDiscussion' });
   });
 
+  it('offers to skip the day-1 vote when the rule is on', () => {
+    const send = vi.fn();
+    render(<Day view={discussionView({ skipsVote: true })} send={send} />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Continue to night 2' }));
+    expect(send).toHaveBeenCalledWith({ t: 'advance' });
+  });
+
   it('hides the ring when untimed', () => {
     render(
       <Day

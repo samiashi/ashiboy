@@ -200,11 +200,13 @@ export default function Day({ view, send }: Props) {
             variants={fadeUp}
             whileTap={{ scale: 0.97 }}
           >
-            Start the vote
+            {view.skipsVote ? `Continue to night ${view.round + 1}` : 'Start the vote'}
           </m.button>
         ) : (
           <m.p className="muted center" variants={fadeUp}>
-            Waiting for {hostName} to start the vote…
+            {view.skipsVote
+              ? `Waiting for ${hostName} to end the discussion…`
+              : `Waiting for ${hostName} to start the vote…`}
           </m.p>
         )}
       </m.div>

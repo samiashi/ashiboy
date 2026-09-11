@@ -31,12 +31,14 @@ describe('lobby & setup', () => {
       hasDetective: false,
       hasDoctor: false,
       discussionSeconds: 180,
+      skipFirstVote: true,
     });
     expect(suggestConfig(5)).toEqual({
       mafiaCount: 1,
       hasDetective: true,
       hasDoctor: true,
       discussionSeconds: 180,
+      skipFirstVote: true,
     });
     expect(suggestConfig(8).mafiaCount).toBe(2);
     expect(suggestConfig(12).mafiaCount).toBe(3);
@@ -173,6 +175,7 @@ describe('day & voting', () => {
       mafiaCount: 1,
       hasDetective: false,
       hasDoctor: false,
+      skipFirstVote: false,
     });
     s = everyoneReady(s);
     const [mafia] = byRole(s, 'mafia');
@@ -262,6 +265,7 @@ describe('host skip (anti-stall)', () => {
       mafiaCount: 1,
       hasDetective: false,
       hasDoctor: false,
+      skipFirstVote: false,
     });
     s = everyoneReady(s);
     const [mafia] = byRole(s, 'mafia');
@@ -300,6 +304,7 @@ describe('discussion timer', () => {
       hasDetective: false,
       hasDoctor: false,
       discussionSeconds,
+      skipFirstVote: false,
     });
     s = everyoneReady(s);
     const [mafia] = byRole(s, 'mafia');
@@ -343,6 +348,56 @@ describe('discussion timer', () => {
     const v = viewFor(s, s.players[1].id);
     expect(v.discussionEndsAt).toBe(NOW + 60_000);
     expect(v.discussionDurationSec).toBe(60);
+  });
+});
+
+describe('skip first vote (day 1 discussion only)', () => {
+  const NOW = 1_000_000;
+  const runAt = (s: GameState, a: Action, now: number) => reduce(s, a, rng, now);
+
+  function toDayOne(skipFirstVote: boolean) {
+    let s = makeGame(['A', 'B', 'C', 'D', 'E'], {
+      mafiaCount: 1,
+      hasDetective: false,
+      hasDoctor: false,
+      skipFirstVote,
+    });
+    s = everyoneReady(s);
+    const [mafia] = byRole(s, 'mafia');
+    const [victim] = byRole(s, 'villager');
+    s = run(s, { t: 'nightAct', id: mafia, targetId: victim });
+    s = runAt(s, { t: 'advance', id: 'p0' }, NOW); // dayReveal -> discussion
+    return s;
+  }
+
+  it('goes straight to night 2 when the rule is on', () => {
+    let s = toDayOne(true);
+    expect(s.phase).toBe('discussion');
+    s = runAt(s, { t: 'advance', id: 'p0' }, NOW + 5_000);
+    expect(s.phase).toBe('night');
+    expect(s.round).toBe(2);
+    expect(s.lastVote).toBeUndefined();
+  });
+
+  it('votes on day 1 when the rule is off', () => {
+    let s = toDayOne(false);
+    s = runAt(s, { t: 'advance', id: 'p0' }, NOW + 5_000);
+    expect(s.phase).toBe('voting');
+  });
+
+  it('expiry advances past a voteless day 1', () => {
+    const s = toDayOne(true);
+    const guest = s.players.find((p) => !p.isHost)!;
+    const next = runAt(s, { t: 'advance', id: guest.id }, NOW + 200_000);
+    expect(next.phase).toBe('night');
+    expect(next.round).toBe(2);
+  });
+
+  it('exposes the skip in the day-1 view only', () => {
+    const dayOne = toDayOne(true);
+    expect(viewFor(dayOne, 'p1').skipsVote).toBe(true);
+    const classic = toDayOne(false);
+    expect(viewFor(classic, 'p1').skipsVote).toBeUndefined();
   });
 });
 

@@ -153,6 +153,16 @@ export default function Lobby({ view, roomCode, send }: Props) {
               />
               Doctor
             </m.label>
+            <m.label className="check-row" variants={fadeUp}>
+              <input
+                type="checkbox"
+                checked={config.skipFirstVote}
+                onChange={(e) =>
+                  send({ t: 'setConfig', config: { ...config, skipFirstVote: e.target.checked } })
+                }
+              />
+              Skip the Day 1 vote
+            </m.label>
             <m.p className="muted picker-label" variants={fadeUp}>
               Discussion timer
             </m.p>
@@ -177,7 +187,8 @@ export default function Lobby({ view, roomCode, send }: Props) {
           {config.discussionSeconds > 0
             ? `${formatClock(config.discussionSeconds)} discussion`
             : 'untimed discussion'}{' '}
-          · suggested for {n}: {suggestConfig(n).mafiaCount} mafia
+          {config.skipFirstVote ? ' · no vote on day 1' : ''} · suggested for {n}:{' '}
+          {suggestConfig(n).mafiaCount} mafia
         </m.p>
         {isHost ? (
           <m.button

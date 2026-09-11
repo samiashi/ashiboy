@@ -21,6 +21,7 @@ export function suggestConfig(playerCount: number): GameConfig {
     hasDetective: playerCount >= 4,
     hasDoctor: playerCount >= 5,
     discussionSeconds: 180,
+    skipFirstVote: true,
   };
 }
 
@@ -33,7 +34,13 @@ export function createLobby(
   return {
     phase: 'lobby',
     players: [makePlayer(hostId, hostName, avatar, token, true)],
-    config: { mafiaCount: 1, hasDetective: true, hasDoctor: true, discussionSeconds: 180 },
+    config: {
+      mafiaCount: 1,
+      hasDetective: true,
+      hasDoctor: true,
+      discussionSeconds: 180,
+      skipFirstVote: true,
+    },
     round: 0,
     night: { mafiaTargets: {} },
     votes: {},
@@ -153,6 +160,7 @@ export function reduce(
           hasDetective: !!action.config.hasDetective,
           hasDoctor: !!action.config.hasDoctor,
           discussionSeconds: Math.max(0, Math.round(action.config.discussionSeconds) || 0),
+          skipFirstVote: !!action.config.skipFirstVote,
         },
       };
     }
@@ -232,6 +240,8 @@ export function reduce(
         // The host may advance anytime; anyone may advance once the timer expires.
         const expired = state.discussionEndsAt !== undefined && now >= state.discussionEndsAt;
         if (!me.isHost && !expired) return state;
+        // Day 1 with the house rule on is discussion only — straight to night 2.
+        if (state.round === 1 && state.config.skipFirstVote) return startNight(state);
         return { ...state, phase: 'voting', votes: {}, discussionEndsAt: undefined };
       }
       if (state.phase === 'voteResult') {
@@ -460,9 +470,12 @@ export function viewFor(state: GameState, playerId: string): PlayerView {
 
   // Day phases and beyond.
   view.lastNight = state.lastNight;
-  if (state.phase === 'discussion' && state.discussionEndsAt !== undefined) {
-    view.discussionEndsAt = state.discussionEndsAt;
-    view.discussionDurationSec = state.config.discussionSeconds;
+  if (state.phase === 'discussion') {
+    if (state.discussionEndsAt !== undefined) {
+      view.discussionEndsAt = state.discussionEndsAt;
+      view.discussionDurationSec = state.config.discussionSeconds;
+    }
+    if (state.round === 1 && state.config.skipFirstVote) view.skipsVote = true;
   }
   if (me.role === 'detective' && state.lastInvestigation) {
     view.investigation = state.lastInvestigation;

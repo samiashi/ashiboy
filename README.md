@@ -53,6 +53,7 @@ and everyone else joins from their own phone with a room code.
 | 🎭  | **Moderator-free** — the app deals roles, narrates the night, counts the votes and crowns the winner. The host plays like everyone else.                                         |
 | 📲  | **Walk away, walk back** — every seat carries a secret rejoin token. Close the tab mid-game, reopen, hit _Rejoin as…_ and you're back with your role intact.                     |
 | ⏭️  | **Never stalls** — if someone pockets their phone mid-night or mid-vote, the host resolves the night or closes the vote. The table always moves.                                 |
+| 🃏  | **Day 1, no vote** — optional house rule: the first day is discussion only, so the first elimination always has history behind it.                                               |
 | ⏱️  | **Discussion timer** — configurable countdown (default 3:00) with a live ring, warning ticks, host extend/skip, and automatic vote opening on expiry.                            |
 | 📷  | **QR invites + kick** — flash the code across the room; remove wrong seats from the lobby in one tap.                                                                            |
 | 🔊  | **A showman in your pocket** — night drones, kill stings, vote clicks, a slamming verdict stamp and win/lose jingles. All synthesized, mutable, with haptics on the big moments. |
@@ -135,7 +136,8 @@ Implemented and verified (`tsc`, 33 engine + 19 UI tests, production build all g
 - ⏭️ **Anti-stall:** the host can resolve a stuck night (missing actors simply
   don't act — counts only, never names) or close a stuck vote (missing voters
   go uncounted). Discussions run on a configurable timer with host extend. The
-  host can also remove wrong seats from the lobby.
+  host can also remove wrong seats from the lobby. Day 1 can be discussion-only
+  via a lobby house rule, so the first vote never happens in an information vacuum.
 - 📷 **QR invites** in the lobby for instant table-wide joining.
 - 🔊 **Sound effects:** night drone, kill sting, vote clicks, gavel, win/lose
   jingles, lobby join pops — all synthesized, with a mute toggle and haptic
@@ -154,7 +156,7 @@ Known limitations (deliberate for now):
 
 - The host's tab _is_ the room. If the host closes it, the game ends for
   everyone (guests are told the room is gone — their seats can't be reclaimed).
-- No discussion timer yet — the host advances day phases manually.
+- No discussion facilitation — the table self-moderates out loud (a configurable timer keeps it moving).
 - No in-app chat — discussion happens out loud (it's a room game).
 - One detective and one doctor max; no extra special roles.
 

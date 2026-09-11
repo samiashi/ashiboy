@@ -21,7 +21,13 @@ function lobbyView(me: string, playerList: PublicPlayer[] = players): PlayerView
     round: 0,
     players: playerList,
     me: { id: self.id, name: self.name, isHost: self.isHost, alive: true },
-    config: { mafiaCount: 1, hasDetective: true, hasDoctor: true, discussionSeconds: 180 },
+    config: {
+      mafiaCount: 1,
+      hasDetective: true,
+      hasDoctor: true,
+      discussionSeconds: 180,
+      skipFirstVote: true,
+    },
   };
 }
 
@@ -47,7 +53,13 @@ describe('Lobby', () => {
     await user.click(screen.getByText('+'));
     expect(send).toHaveBeenCalledWith({
       t: 'setConfig',
-      config: { mafiaCount: 2, hasDetective: true, hasDoctor: true, discussionSeconds: 180 },
+      config: {
+        mafiaCount: 2,
+        hasDetective: true,
+        hasDoctor: true,
+        discussionSeconds: 180,
+        skipFirstVote: true,
+      },
     });
   });
 
@@ -60,7 +72,13 @@ describe('Lobby', () => {
     await user.click(screen.getByRole('button', { name: '5:00' }));
     expect(send).toHaveBeenCalledWith({
       t: 'setConfig',
-      config: { mafiaCount: 1, hasDetective: true, hasDoctor: true, discussionSeconds: 300 },
+      config: {
+        mafiaCount: 1,
+        hasDetective: true,
+        hasDoctor: true,
+        discussionSeconds: 300,
+        skipFirstVote: true,
+      },
     });
   });
 
@@ -73,6 +91,31 @@ describe('Lobby', () => {
     render(<Lobby view={lobbyView('a')} roomCode="ABC123" send={vi.fn()} />);
     expect(screen.getByText(/Waiting for the host to start/)).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Deal roles & start' })).toBeNull();
+  });
+
+  it('toggles skipping the Day 1 vote', async () => {
+    const user = userEvent.setup();
+    const send = vi.fn();
+    render(<Lobby view={lobbyView('h')} roomCode="ABC123" send={send} />);
+
+    expect(screen.getByText(/no vote on day 1/)).toBeTruthy();
+    // NOTE: queried structurally — happy-dom doesn't do implicit label naming.
+    const boxes = screen.getAllByRole('checkbox');
+    const skip = boxes.find((box) =>
+      box.closest('label')?.textContent?.includes('Skip the Day 1 vote'),
+    );
+    expect(skip).toBeTruthy();
+    await user.click(skip!);
+    expect(send).toHaveBeenCalledWith({
+      t: 'setConfig',
+      config: {
+        mafiaCount: 1,
+        hasDetective: true,
+        hasDoctor: true,
+        discussionSeconds: 180,
+        skipFirstVote: false,
+      },
+    });
   });
 
   it('lets the host remove other seats', async () => {

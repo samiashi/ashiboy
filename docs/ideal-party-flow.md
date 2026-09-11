@@ -87,6 +87,9 @@ optional, remembered next visit. No validation beyond non-empty.
 - Configurable countdown (default 3:00, host can extend, skip, or disable).
   Every device counts down from the host-set deadline; expiry opens the vote,
   with warning ticks in the final seconds.
+- Optional Day-1-no-vote house rule: the first day is discussion only, so the
+  first elimination always has a kill, a vote record, and two discussions
+  behind it instead of happening in an information vacuum.
 
 ### 7. Voting — the elimination
 

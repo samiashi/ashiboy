@@ -29,6 +29,8 @@ export interface GameConfig {
   hasDoctor: boolean;
   /** Discussion length in seconds. 0 = untimed (host advances manually). */
   discussionSeconds: number;
+  /** Day 1 is discussion only — the first vote happens on day 2. */
+  skipFirstVote: boolean;
 }
 
 export interface NightState {
@@ -126,6 +128,8 @@ export interface PlayerView {
   /** Discussion deadline + original length (discussion phase only, public info). */
   discussionEndsAt?: number;
   discussionDurationSec?: number;
+  /** True when advancing from this discussion skips the vote (round 1 + rule on). */
+  skipsVote?: boolean;
   /** detective only */
   investigation?: { targetId: string; isMafia: boolean };
   votes?: Record<string, string | null>;

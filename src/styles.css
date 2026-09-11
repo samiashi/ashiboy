@@ -417,7 +417,6 @@ body::before {
   display: block;
   aspect-ratio: 4 / 3;
   overflow: hidden;
-  border-bottom: 1px solid var(--border);
   line-height: 0;
 }
 
