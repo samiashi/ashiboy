@@ -1,0 +1,351 @@
+/* Codenames game styles — loaded only with the codenames bundle.
+   Shared components (topbar, cards, buttons, boards, countdown, …) live in
+   styles.css — this file holds Codenames-only styles. */
+
+.team-spy-note {
+  margin: 0;
+  font-size: 0.8rem;
+}
+
+/* ---------- lobby teams ---------- */
+
+.team-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.team-col {
+  border-radius: 12px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.team-col-red {
+  background: rgba(229, 72, 77, 0.08);
+  border: 1px solid rgba(229, 72, 77, 0.35);
+}
+
+.team-col-blue {
+  background: rgba(91, 156, 248, 0.08);
+  border: 1px solid rgba(91, 156, 248, 0.35);
+}
+
+.team-col h3 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.team-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.team-dot-red {
+  background: var(--team-red);
+  box-shadow: 0 0 10px rgba(229, 72, 77, 0.6);
+}
+
+.team-dot-blue {
+  background: var(--team-blue);
+  box-shadow: 0 0 10px rgba(91, 156, 248, 0.6);
+}
+
+.team-member {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  font-size: 0.92rem;
+  min-width: 0;
+}
+
+.team-member > span:first-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.star-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.05rem;
+  padding: 2px 4px;
+  color: var(--muted);
+  opacity: 0.6;
+  transition:
+    opacity 0.14s ease,
+    transform 0.1s ease;
+  flex-shrink: 0;
+}
+
+.star-btn:active {
+  transform: scale(0.9);
+}
+
+.star-btn-on {
+  color: var(--gold-bright);
+  opacity: 1;
+  text-shadow: 0 0 12px rgba(201, 162, 39, 0.6);
+}
+
+/* ---------- board ---------- */
+
+.scorebar {
+  display: flex;
+  gap: 10px;
+}
+
+.score {
+  flex: 1;
+  border-radius: 12px;
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border: 1px solid var(--border);
+  background: rgba(10, 10, 15, 0.5);
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.score-red-active {
+  border-color: rgba(229, 72, 77, 0.6);
+  box-shadow: 0 0 18px rgba(229, 72, 77, 0.2);
+}
+
+.score-blue-active {
+  border-color: rgba(91, 156, 248, 0.6);
+  box-shadow: 0 0 18px rgba(91, 156, 248, 0.2);
+}
+
+.score-name {
+  font-family: var(--font-display);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 2px;
+}
+
+.score-red-active .score-name {
+  color: var(--team-red);
+}
+
+.score-blue-active .score-name {
+  color: var(--team-blue);
+}
+
+.score-count {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 1.4rem;
+}
+
+.board {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 7px;
+}
+
+.word-card {
+  aspect-ratio: 1 / 0.72;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: linear-gradient(180deg, rgba(38, 38, 48, 0.92), rgba(22, 22, 29, 0.92));
+  color: var(--text);
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: clamp(0.58rem, 2.6vw, 0.88rem);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  cursor: pointer;
+  padding: 2px;
+  overflow-wrap: break-word;
+  hyphens: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
+  transition:
+    transform 0.12s ease,
+    border-color 0.14s ease,
+    filter 0.14s ease;
+}
+
+button.word-card:not(:disabled):hover {
+  transform: translateY(-2px);
+  border-color: var(--border-strong);
+  filter: brightness(1.12);
+}
+
+button.word-card:active {
+  transform: scale(0.95);
+}
+
+button.word-card:disabled {
+  cursor: default;
+}
+
+.word-covered-red {
+  background: linear-gradient(180deg, var(--team-red-strong), var(--team-red-deep));
+  border-color: var(--team-red-dark);
+  color: #fff3ea;
+}
+
+.word-covered-blue {
+  background: linear-gradient(180deg, var(--team-blue-strong), var(--team-blue-deep));
+  border-color: var(--team-blue-dark);
+  color: #eef4ff;
+}
+
+.word-covered-bystander {
+  background: linear-gradient(180deg, #4a4438, #322e25);
+  border-color: #57503c;
+  color: #cfc6ad;
+}
+
+.word-covered-assassin {
+  background: linear-gradient(180deg, #1c1c22, #000);
+  border-color: var(--accent);
+  color: #fff;
+  box-shadow: 0 0 18px rgba(229, 72, 77, 0.4);
+}
+
+.word-key-red {
+  background: rgba(229, 72, 77, 0.16);
+  border-color: rgba(229, 72, 77, 0.5);
+}
+
+.word-key-blue {
+  background: rgba(91, 156, 248, 0.16);
+  border-color: rgba(91, 156, 248, 0.5);
+}
+
+.word-key-bystander {
+  background: rgba(167, 159, 139, 0.1);
+}
+
+.word-key-assassin {
+  background: rgba(0, 0, 0, 0.55);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* ---------- clue ---------- */
+
+.clue-banner {
+  border: 1px solid var(--border-strong);
+  border-radius: 14px;
+  padding: 14px 16px;
+  text-align: center;
+  background: rgba(201, 162, 39, 0.07);
+  box-shadow: 0 0 24px rgba(201, 162, 39, 0.1);
+}
+
+.clue-word {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 1.7rem;
+  letter-spacing: 2px;
+  text-indent: 2px;
+}
+
+.clue-number {
+  display: inline-block;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 1.1rem;
+  border: 2px solid var(--gold);
+  color: var(--gold-bright);
+  border-radius: 10px;
+  padding: 2px 12px;
+  margin-left: 10px;
+  vertical-align: middle;
+}
+
+.clue-meta {
+  margin: 6px 0 0;
+  font-size: 0.85rem;
+}
+
+.clue-history {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.clue-history-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.92rem;
+}
+
+.clue-history-word {
+  font-weight: 700;
+}
+
+/* ---------- clue composer ---------- */
+
+.composer-row {
+  display: flex;
+  gap: 10px;
+}
+
+.composer-row .input {
+  flex: 1;
+  min-width: 0;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+/* ---------- game over ---------- */
+
+.gameover-red {
+  border-color: rgba(229, 72, 77, 0.55);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 0 44px rgba(229, 72, 77, 0.22),
+    0 18px 44px rgba(0, 0, 0, 0.45);
+}
+
+.gameover-blue {
+  border-color: rgba(91, 156, 248, 0.5);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 0 44px rgba(91, 156, 248, 0.2),
+    0 18px 44px rgba(0, 0, 0, 0.45);
+}
+
+.role-pill-red {
+  border-color: rgba(229, 72, 77, 0.5);
+  background: rgba(229, 72, 77, 0.12);
+}
+
+.role-pill-blue {
+  border-color: rgba(91, 156, 248, 0.5);
+  background: rgba(91, 156, 248, 0.12);
+}
+
+.winner-red {
+  color: var(--team-red);
+  text-shadow: 0 0 34px rgba(229, 72, 77, 0.6);
+}
+
+.winner-blue {
+  color: var(--team-blue);
+  text-shadow: 0 0 34px rgba(91, 156, 248, 0.55);
+}

@@ -1,9 +1,9 @@
 /**
- * Mafia seat persistence (seat + rejoin token) for mid-game rejoins.
+ * Codenames seat persistence (seat + rejoin token) for mid-game rejoins.
  * The name/avatar profile itself lives in `@/shared/identity` (site-wide).
  */
 
-const SESSION_KEY = 'ashiboy-mafia-session';
+const SESSION_KEY = 'ashiboy-codenames-session';
 
 export type { Profile } from '@/shared/identity';
 

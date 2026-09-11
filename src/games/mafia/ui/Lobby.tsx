@@ -1,9 +1,12 @@
-import { useState } from 'react';
 import { AnimatePresence, m } from 'motion/react';
-import QRCode from 'react-qr-code';
 import { suggestConfig } from '@/games/mafia/engine/engine';
 import { ClientMessage, PlayerView } from '@/games/mafia/engine/types';
-import { fadeUp, popIn, staggerParent } from '@/anim';
+import { fadeUp, staggerParent } from '@/anim';
+import { formatClock } from '@/shared/format';
+import { CheckRow } from '@/shared/components/CheckRow';
+import { PresetRow } from '@/shared/components/PresetRow';
+import { RoomCodeCard } from '@/shared/components/RoomCodeCard';
+import { Stepper } from '@/shared/components/Stepper';
 
 interface Props {
   view: PlayerView;
@@ -19,10 +22,6 @@ const DISCUSSION_PRESETS = [
   { label: '5:00', seconds: 300 },
 ];
 
-function formatClock(totalSeconds: number): string {
-  return `${Math.floor(totalSeconds / 60)}:${String(totalSeconds % 60).padStart(2, '0')}`;
-}
-
 export default function Lobby({ view, roomCode, send }: Props) {
   const isHost = view.me.isHost;
   const n = view.players.length;
@@ -33,22 +32,11 @@ export default function Lobby({ view, roomCode, send }: Props) {
   const specials = (config.hasDetective ? 1 : 0) + (config.hasDoctor ? 1 : 0);
   const villagers = Math.max(0, town - Math.min(specials, town));
   const canStart = n >= 3;
-  const [copied, setCopied] = useState(false);
 
   const inviteLink = `${location.origin}${location.pathname}#/mafia?join=${roomCode}`;
 
   const setDiscussion = (seconds: number) =>
     send({ t: 'setConfig', config: { ...config, discussionSeconds: seconds } });
-
-  const copyLink = async () => {
-    try {
-      await navigator.clipboard.writeText(inviteLink);
-      setCopied(true);
-      window.setTimeout(() => setCopied(false), 1600);
-    } catch {
-      // clipboard unavailable (non-secure context) — the code is visible anyway
-    }
-  };
 
   const setMafia = (delta: number) =>
     send({
@@ -58,16 +46,7 @@ export default function Lobby({ view, roomCode, send }: Props) {
 
   return (
     <div className="app">
-      <m.div className="card card-luxe center" variants={popIn} initial="hidden" animate="show">
-        <p className="eyebrow">Room code — share it with everyone</p>
-        <p className="big-code">{roomCode}</p>
-        <div className="qr-box">
-          <QRCode value={inviteLink} size={148} bgColor="#f3e9d0" fgColor="#241d12" />
-        </div>
-        <button className="btn btn-ghost" onClick={copyLink}>
-          {copied ? 'Copied to clipboard!' : 'Copy invite link'}
-        </button>
-      </m.div>
+      <RoomCodeCard roomCode={roomCode} inviteLink={inviteLink} />
 
       <m.div className="card" variants={staggerParent} initial="hidden" animate="show">
         <m.h2 className="section-title" variants={fadeUp}>
@@ -113,69 +92,48 @@ export default function Lobby({ view, roomCode, send }: Props) {
           <>
             <m.div className="stepper-row" variants={fadeUp}>
               <span>Mafia</span>
-              <div className="stepper">
-                <m.button
-                  className="btn btn-small"
-                  onClick={() => setMafia(-1)}
-                  disabled={mafia <= 1}
-                  whileTap={{ scale: 0.9 }}
-                >
-                  −
-                </m.button>
-                <span className="stepper-value">{mafia}</span>
-                <m.button
-                  className="btn btn-small"
-                  onClick={() => setMafia(1)}
-                  disabled={mafia >= maxMafia}
-                  whileTap={{ scale: 0.9 }}
-                >
-                  +
-                </m.button>
-              </div>
+              <Stepper
+                value={mafia}
+                onMinus={() => setMafia(-1)}
+                onPlus={() => setMafia(1)}
+                minusDisabled={mafia <= 1}
+                plusDisabled={mafia >= maxMafia}
+              />
             </m.div>
-            <m.label className="check-row" variants={fadeUp}>
-              <input
-                type="checkbox"
+            <m.div variants={fadeUp}>
+              <CheckRow
                 checked={config.hasDetective}
-                onChange={(e) =>
-                  send({ t: 'setConfig', config: { ...config, hasDetective: e.target.checked } })
-                }
-              />
-              Detective
-            </m.label>
-            <m.label className="check-row" variants={fadeUp}>
-              <input
-                type="checkbox"
+                onChange={(v) => send({ t: 'setConfig', config: { ...config, hasDetective: v } })}
+              >
+                Detective
+              </CheckRow>
+            </m.div>
+            <m.div variants={fadeUp}>
+              <CheckRow
                 checked={config.hasDoctor}
-                onChange={(e) =>
-                  send({ t: 'setConfig', config: { ...config, hasDoctor: e.target.checked } })
-                }
-              />
-              Doctor
-            </m.label>
-            <m.label className="check-row" variants={fadeUp}>
-              <input
-                type="checkbox"
+                onChange={(v) => send({ t: 'setConfig', config: { ...config, hasDoctor: v } })}
+              >
+                Doctor
+              </CheckRow>
+            </m.div>
+            <m.div variants={fadeUp}>
+              <CheckRow
                 checked={config.skipFirstVote}
-                onChange={(e) =>
-                  send({ t: 'setConfig', config: { ...config, skipFirstVote: e.target.checked } })
-                }
-              />
-              Skip the Day 1 vote
-            </m.label>
+                onChange={(v) => send({ t: 'setConfig', config: { ...config, skipFirstVote: v } })}
+              >
+                Skip the Day 1 vote
+              </CheckRow>
+            </m.div>
             <m.p className="muted picker-label" variants={fadeUp}>
               Discussion timer
             </m.p>
-            <m.div className="preset-row" variants={fadeUp}>
-              {DISCUSSION_PRESETS.map((preset) => (
-                <button
-                  key={preset.label}
-                  className={`pill-btn${config.discussionSeconds === preset.seconds ? ' pill-btn-selected' : ''}`}
-                  onClick={() => setDiscussion(preset.seconds)}
-                >
-                  {preset.label}
-                </button>
-              ))}
+            <m.div variants={fadeUp}>
+              <PresetRow
+                ariaLabel="Discussion timer"
+                options={DISCUSSION_PRESETS.map((p) => ({ label: p.label, value: p.seconds }))}
+                value={config.discussionSeconds}
+                onSelect={setDiscussion}
+              />
             </m.div>
           </>
         ) : null}

@@ -26,6 +26,12 @@ export default function App() {
   const { path, params } = parseHash();
   const game = games.find((g) => g.slug === path);
 
+  // Hash routes don't move the viewport — always restart at the top,
+  // e.g. returning to the hub from deep inside a game.
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [path]);
+
   return (
     <Suspense
       fallback={

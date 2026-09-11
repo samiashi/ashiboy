@@ -1,5 +1,6 @@
 import { lazy, type ComponentType, type LazyExoticComponent } from 'react';
 import mafiaPreview from '@/assets/mafia-preview.svg';
+import codenamesPreview from '@/assets/codenames-preview.svg';
 
 export interface GameProps {
   /** Query params from the hash route, e.g. '#/mafia?join=ABC123'. */
@@ -30,5 +31,13 @@ export const games: GameInfo[] = [
     players: '3–20 players',
     preview: mafiaPreview,
     component: lazy(() => import('@/games/mafia')),
+  },
+  {
+    slug: '/codenames',
+    title: 'Codenames',
+    tagline: 'Two spy teams race to contact their agents — one word at a time.',
+    players: '4–20 players',
+    preview: codenamesPreview,
+    component: lazy(() => import('@/games/codenames')),
   },
 ];

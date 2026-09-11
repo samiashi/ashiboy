@@ -10,8 +10,8 @@ type WakeLock = {
 
 /**
  * Keeps the screen awake while active (e.g. for the whole game, so phones
- * don't dim mid-discussion and miss votes). Silent no-op where the Wake Lock
- * API is unavailable. Locks release automatically when the tab hides, so we
+ * don't dim mid-play and miss turns). Silent no-op where the Wake Lock API
+ * is unavailable. Locks release automatically when the tab hides, so we
  * re-acquire on visibility change.
  */
 export function useWakeLock(active: boolean): void {

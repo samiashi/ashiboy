@@ -4,20 +4,9 @@
 
 <img src="https://readme-typing-svg.demolab.com?font=Fira+Code&weight=600&size=21&duration=2800&pause=1200&color=C9A227&center=true&vCenter=true&width=620&lines=No+moderator.+No+mercy.;Everyone+plays%2C+everyone+lies.;One+room.+One+phone+each." alt="No moderator. No mercy. Everyone plays, everyone lies." />
 
-![React](https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=black)
-![TypeScript](https://img.shields.io/badge/TypeScript-7-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
-![Vite](https://img.shields.io/badge/Vite-8-646CFF?style=for-the-badge&logo=vite&logoColor=white)
-![Vitest](https://img.shields.io/badge/Vitest-5-6E9F18?style=for-the-badge&logo=vitest&logoColor=white)
-![Motion](https://img.shields.io/badge/Motion-13-000000?style=for-the-badge&logo=framer&logoColor=white)
-![Node.js](https://img.shields.io/badge/Node.js-24-339933?style=for-the-badge&logo=node.js&logoColor=white)
-
-![tests](https://img.shields.io/badge/tests-33_passing-brightgreen?style=for-the-badge)
-![players](https://img.shields.io/badge/players-3%E2%80%9320-C9A227?style=for-the-badge)
-![backend](https://img.shields.io/badge/backend-none-E5484D?style=for-the-badge)
-
 **Ashiboy** is a website for hosting party games you play in the room,
-straight from your phones. **Mafia** is the first game; the site is built so
-more games can join the table as self-contained modules.
+straight from your phones. **Mafia** and **Codenames** live here; the site is
+built so more games can join the table as self-contained modules.
 
 There is **no backend and no gamemaster**. One player's browser hosts the game
 and everyone else joins from their own phone with a room code.
@@ -87,14 +76,28 @@ src/
 ├── App.tsx                 # tiny hash router:  #/ → hub,  #/<game> → game
 ├── hub/Hub.tsx             # landing page listing all games
 ├── games/registry.ts       # one entry per game → add a game by adding a line
-└── games/mafia/            # first game, fully self-contained
+├── games/mafia/            # moderator-free social deduction
+│   ├── index.tsx           # game root: session + screen switching
+│   ├── engine/             # pure game rules (state machine + tests)
+│   ├── net/                # PeerJS host/client + localStorage identity
+│   ├── ui/                 # one screen per phase (Home, Lobby, Night, Day, Voting, …)
+│   ├── sound.ts            # synthesized sound effects (Web Audio, no files)
+│   └── mafia.css           # game styles (loaded only with the game bundle)
+└── games/codenames/        # team word-spy game (same architecture, own rules)
     ├── index.tsx           # game root: session + screen switching
-    ├── engine/             # pure game rules (state machine + tests)
+    ├── engine/             # pure rules + original 300-word list + tests
     ├── net/                # PeerJS host/client + localStorage identity
-    ├── ui/                 # one screen per phase (Home, Lobby, Night, Day, Voting, …)
-    ├── sound.ts            # synthesized sound effects (Web Audio, no files)
-    └── mafia.css           # game styles (loaded only with the game bundle)
+    ├── ui/                 # Home, Lobby (teams), Table (clues + board), GameOver
+    ├── sound.ts            # its own synthesized sound set
+    └── codenames.css       # game styles (loaded only with the game bundle)
 ```
+
+Shared across games: hub shell, `anim` motion presets, and player identity
+(`src/shared/identity.ts` — one name + avatar everywhere).
+
+The design system lives in `src/shared/` (components, session hook, sound
+kit, theme tokens — see `src/shared/README.md`): one visual language for
+every game, rethemable through CSS custom properties.
 
 <details>
 <summary><strong>Design decisions worth knowing</strong></summary>
@@ -119,12 +122,13 @@ src/
 </details>
 
 > The target experience is specced in [`docs/ideal-party-flow.md`](docs/ideal-party-flow.md)
+> (Mafia) and [`docs/codenames-flow.md`](docs/codenames-flow.md) (Codenames)
 > — principles, the perfect game night stage by stage, and the accepted
-> limitations. New features are judged against it.
+> limitations. New features are judged against them.
 
 ## 📋 Status
 
-Implemented and verified (`tsc`, 33 engine + 19 UI tests, production build all green):
+Implemented and verified (`tsc`, 115 tests, production build all green):
 
 - 🃏 Full moderator-free Mafia flow: lobby → roles → night → day → vote → win,
   with 1–4+ mafia, optional detective and doctor, suggested setups per player
@@ -151,6 +155,10 @@ Implemented and verified (`tsc`, 33 engine + 19 UI tests, production build all g
   that work offline, and `prefers-reduced-motion` support.
 - ♿ **Screen-reader announcements** of every phase change, and a wake lock so
   screens never sleep mid-game. UI screens covered by interaction tests.
+- 🕵️ **Codenames is live:** team lobby with spymaster starring, secret-key
+  dealing from an original 300-word list, clue composer (0–9 + ∞), tap-to-guess
+  board with plus-one/assassin/opponent-win rules, turn timer, rematch with
+  fresh boards.
 
 Known limitations (deliberate for now):
 
@@ -163,7 +171,7 @@ Known limitations (deliberate for now):
 <details>
 <summary><strong>Ideas for next steps</strong> (not started)</summary>
 
-- Game #2 on the hub via `src/games/<name>/` + one registry line.
+- Game #3 on the hub via `src/games/<name>/` + one registry line.
 - Host resume (persist state so a dropped host can reclaim the room).
 - Custom rule toggles (e.g. doctor self-save limits, majority-vs-plurality lynch).
 

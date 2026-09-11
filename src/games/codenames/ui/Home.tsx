@@ -1,6 +1,6 @@
-import type { StoredSession } from '@/games/mafia/net/persistence';
+import type { StoredSession } from '@/games/codenames/net/persistence';
 import { GameHome } from '@/shared/components/GameHome';
-import HowToPlay from '@/games/mafia/ui/HowToPlay';
+import HowToPlay from '@/games/codenames/ui/HowToPlay';
 
 interface Props {
   connecting: boolean;
@@ -15,12 +15,12 @@ interface Props {
   onForgetSession(): void;
 }
 
-/** Mafia entry screen — words and rules live here, structure is shared. */
+/** Codenames entry screen — words and rules live here, structure is shared. */
 export default function Home(props: Props) {
   return (
     <GameHome
-      title="Mafia"
-      tagline="A game of hidden identity and deception. This app replaces the moderator — everyone gets to play."
+      title="Codenames"
+      tagline="Two teams race to contact their secret agents — one word at a time."
       howToPlay={<HowToPlay />}
       {...props}
     />

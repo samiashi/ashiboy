@@ -1,47 +1,49 @@
 import Peer, { type DataConnection } from 'peerjs';
-import { createLobby, reduce, viewFor } from '@/games/mafia/engine/engine';
+import { createLobby, reduce, viewFor } from '@/games/codenames/engine/engine';
 import {
   Action,
   ClientMessage,
   GameState,
   HostMessage,
   PlayerView,
-} from '@/games/mafia/engine/types';
+} from '@/games/codenames/engine/types';
 import { randomId, randomToken } from '@/shared/ids';
 
 export { makeRoomCode } from '@/shared/ids';
 
 /**
  * PeerJS id namespace for this game. Keeps room codes unique per site+game
- * on the public PeerJS cloud (future games get their own prefix).
+ * on the public PeerJS cloud.
  */
-const PEER_PREFIX = 'ashiboy-mafia-';
+const PEER_PREFIX = 'ashiboy-codenames-';
 
 /** Attaches the sender's player id to a wire message. Returns null for 'join' (host is already in). */
 export function toAction(playerId: string, msg: ClientMessage): Action | null {
   switch (msg.t) {
     case 'join':
       return null;
+    case 'remove':
+      return { t: 'remove', id: playerId, targetId: msg.targetId };
+    case 'setTeam':
+      return { t: 'setTeam', id: playerId, targetId: msg.targetId, team: msg.team };
+    case 'setSpymaster':
+      return { t: 'setSpymaster', id: playerId, targetId: msg.targetId, value: msg.value };
+    case 'randomize':
+      return { t: 'randomize', id: playerId };
     case 'setConfig':
       return { t: 'setConfig', id: playerId, config: msg.config };
     case 'start':
       return { t: 'start', id: playerId };
-    case 'ackRole':
-      return { t: 'ackRole', id: playerId };
-    case 'nightAct':
-      return { t: 'nightAct', id: playerId, targetId: msg.targetId };
-    case 'advance':
-      return { t: 'advance', id: playerId };
-    case 'extendDiscussion':
-      return { t: 'extendDiscussion', id: playerId };
-    case 'skipNight':
-      return { t: 'skipNight', id: playerId };
-    case 'closeVote':
-      return { t: 'closeVote', id: playerId };
-    case 'remove':
-      return { t: 'remove', id: playerId, targetId: msg.targetId };
-    case 'vote':
-      return { t: 'vote', id: playerId, targetId: msg.targetId };
+    case 'giveClue':
+      return { t: 'giveClue', id: playerId, word: msg.word, number: msg.number };
+    case 'guess':
+      return { t: 'guess', id: playerId, cardIndex: msg.cardIndex };
+    case 'endTurn':
+      return { t: 'endTurn', id: playerId };
+    case 'passTurn':
+      return { t: 'passTurn', id: playerId };
+    case 'extendTurn':
+      return { t: 'extendTurn', id: playerId };
     case 'playAgain':
       return { t: 'playAgain', id: playerId };
   }
@@ -49,12 +51,9 @@ export function toAction(playerId: string, msg: ClientMessage): Action | null {
 
 /**
  * The authoritative game session, running on the host player's device.
- * Owns the full GameState (including everyone's secret roles), applies all
+ * Owns the full GameState (including the unrevealed key), applies all
  * actions through the engine, and publishes a personalized PlayerView to
  * each connected device — never the raw state.
- *
- * Note: since the host device holds all secrets, a curious host could peek
- * via devtools. Accepted trade-off for a serverless party game.
  */
 export class GameHost {
   readonly code: string;
@@ -129,9 +128,6 @@ export class GameHost {
           const prev = this.conns.get(playerId);
           this.conns.set(playerId, conn);
           if (prev && prev !== conn) {
-            // A stale tab still holds this seat — revoke it so only the new
-            // connection can act. (Its close handler no-ops thanks to the
-            // ownership check in drop().)
             try {
               prev.close();
             } catch {
