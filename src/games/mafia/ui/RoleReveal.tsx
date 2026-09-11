@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { motion } from 'motion/react';
+import { m } from 'motion/react';
 import { ClientMessage, PlayerView } from '@/games/mafia/engine/types';
 import { fadeUp, staggerParent } from '@/anim';
 import { ROLE_INFO } from '@/games/mafia/ui/roles';
@@ -20,17 +20,17 @@ export default function RoleReveal({ view, send }: Props) {
 
   return (
     <div className="app">
-      <motion.div
+      <m.div
         className="card card-luxe center"
         variants={staggerParent}
         initial="hidden"
         animate="show"
       >
-        <motion.p className="muted" variants={fadeUp}>
+        <m.p className="muted" variants={fadeUp}>
           Your secret role — don't show anyone
-        </motion.p>
+        </m.p>
 
-        <motion.div variants={fadeUp} className="flip-scene">
+        <m.div variants={fadeUp} className="flip-scene">
           <button
             type="button"
             className={`flip-inner${flipped ? ' flipped' : ''}`}
@@ -54,9 +54,9 @@ export default function RoleReveal({ view, send }: Props) {
               )}
             </span>
           </button>
-        </motion.div>
+        </m.div>
 
-        <motion.button
+        <m.button
           className="btn btn-primary"
           disabled={!flipped || meReady}
           onClick={() => send({ t: 'ackRole' })}
@@ -68,8 +68,8 @@ export default function RoleReveal({ view, send }: Props) {
             : meReady
               ? `Waiting for others (${readyCount}/${eligible})…`
               : 'Got it — hide my role'}
-        </motion.button>
-      </motion.div>
+        </m.button>
+      </m.div>
     </div>
   );
 }

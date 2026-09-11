@@ -894,3 +894,38 @@
 .sound-toggle:active {
   transform: scale(0.92);
 }
+
+/* ---------- touch & small screens ---------- */
+
+.chip,
+.avatar-option,
+.sound-toggle {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+/* Rapid tapping on game tiles must never select text/emoji. */
+.chip,
+.avatar-option {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.hero h1 {
+  font-size: clamp(2.2rem, 13vw, 3rem);
+}
+
+.big-code {
+  --code-track: clamp(4px, 2.5vw, 10px);
+  font-size: clamp(2rem, 11vw, 3rem);
+  letter-spacing: var(--code-track);
+  text-indent: var(--code-track);
+}
+
+.winner-title {
+  font-size: clamp(1.5rem, 8vw, 2rem);
+}
+
+.avatar-grid {
+  grid-template-columns: repeat(auto-fill, minmax(46px, 1fr));
+}

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { AnimatePresence, motion } from 'motion/react';
+import { AnimatePresence, m } from 'motion/react';
 import QRCode from 'react-qr-code';
 import { suggestConfig } from '@/games/mafia/engine/engine';
 import { ClientMessage, PlayerView } from '@/games/mafia/engine/types';
@@ -43,12 +43,7 @@ export default function Lobby({ view, roomCode, send }: Props) {
 
   return (
     <div className="app">
-      <motion.div
-        className="card card-luxe center"
-        variants={popIn}
-        initial="hidden"
-        animate="show"
-      >
+      <m.div className="card card-luxe center" variants={popIn} initial="hidden" animate="show">
         <p className="eyebrow">Room code — share it with everyone</p>
         <p className="big-code">{roomCode}</p>
         <div className="qr-box">
@@ -57,16 +52,16 @@ export default function Lobby({ view, roomCode, send }: Props) {
         <button className="btn btn-ghost" onClick={copyLink}>
           {copied ? 'Copied to clipboard!' : 'Copy invite link'}
         </button>
-      </motion.div>
+      </m.div>
 
-      <motion.div className="card" variants={staggerParent} initial="hidden" animate="show">
-        <motion.h2 className="section-title" variants={fadeUp}>
+      <m.div className="card" variants={staggerParent} initial="hidden" animate="show">
+        <m.h2 className="section-title" variants={fadeUp}>
           Players ({n})
-        </motion.h2>
+        </m.h2>
         <ul className="player-list">
           <AnimatePresence initial={false}>
             {view.players.map((p) => (
-              <motion.li
+              <m.li
                 key={p.id}
                 className={`player-row${p.connected ? '' : ' player-offline'}`}
                 variants={fadeUp}
@@ -89,41 +84,41 @@ export default function Lobby({ view, roomCode, send }: Props) {
                     </button>
                   )}
                 </span>
-              </motion.li>
+              </m.li>
             ))}
           </AnimatePresence>
         </ul>
-      </motion.div>
+      </m.div>
 
-      <motion.div className="card" variants={staggerParent} initial="hidden" animate="show">
-        <motion.h2 className="section-title" variants={fadeUp}>
+      <m.div className="card" variants={staggerParent} initial="hidden" animate="show">
+        <m.h2 className="section-title" variants={fadeUp}>
           Setup
-        </motion.h2>
+        </m.h2>
         {isHost ? (
           <>
-            <motion.div className="stepper-row" variants={fadeUp}>
+            <m.div className="stepper-row" variants={fadeUp}>
               <span>Mafia</span>
               <div className="stepper">
-                <motion.button
+                <m.button
                   className="btn btn-small"
                   onClick={() => setMafia(-1)}
                   disabled={mafia <= 1}
                   whileTap={{ scale: 0.9 }}
                 >
                   −
-                </motion.button>
+                </m.button>
                 <span className="stepper-value">{mafia}</span>
-                <motion.button
+                <m.button
                   className="btn btn-small"
                   onClick={() => setMafia(1)}
                   disabled={mafia >= maxMafia}
                   whileTap={{ scale: 0.9 }}
                 >
                   +
-                </motion.button>
+                </m.button>
               </div>
-            </motion.div>
-            <motion.label className="check-row" variants={fadeUp}>
+            </m.div>
+            <m.label className="check-row" variants={fadeUp}>
               <input
                 type="checkbox"
                 checked={config.hasDetective}
@@ -132,8 +127,8 @@ export default function Lobby({ view, roomCode, send }: Props) {
                 }
               />
               Detective
-            </motion.label>
-            <motion.label className="check-row" variants={fadeUp}>
+            </m.label>
+            <m.label className="check-row" variants={fadeUp}>
               <input
                 type="checkbox"
                 checked={config.hasDoctor}
@@ -142,18 +137,18 @@ export default function Lobby({ view, roomCode, send }: Props) {
                 }
               />
               Doctor
-            </motion.label>
+            </m.label>
           </>
         ) : null}
-        <motion.p className="muted setup-summary" variants={fadeUp}>
+        <m.p className="muted setup-summary" variants={fadeUp}>
           {mafia} mafia
           {config.hasDetective && specials <= town ? ', 1 detective' : ''}
           {config.hasDoctor && specials <= town ? ', 1 doctor' : ''}
           {villagers > 0 ? `, ${villagers} villager${villagers === 1 ? '' : 's'}` : ''} · suggested
           for {n}: {suggestConfig(n).mafiaCount} mafia
-        </motion.p>
+        </m.p>
         {isHost ? (
-          <motion.button
+          <m.button
             className="btn btn-primary"
             disabled={!canStart}
             onClick={() => send({ t: 'start' })}
@@ -163,16 +158,16 @@ export default function Lobby({ view, roomCode, send }: Props) {
             {canStart
               ? 'Deal roles & start'
               : `Need at least ${3 - n} more player${3 - n === 1 ? '' : 's'}`}
-          </motion.button>
+          </m.button>
         ) : (
-          <motion.p className="muted center" variants={fadeUp}>
+          <m.p className="muted center" variants={fadeUp}>
             Waiting for the host to start
             <span className="dots" aria-hidden="true">
               …
             </span>
-          </motion.p>
+          </m.p>
         )}
-      </motion.div>
+      </m.div>
     </div>
   );
 }

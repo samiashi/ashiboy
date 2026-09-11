@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { AnimatePresence, motion } from 'motion/react';
+import { AnimatePresence, m } from 'motion/react';
 import type { GameProps } from '@/games/registry';
 import { GameClient, ROOM_GONE_MESSAGE } from '@/games/mafia/net/client';
 import { GameHost, makeRoomCode } from '@/games/mafia/net/host';
@@ -247,7 +247,7 @@ export default function MafiaGame({ params }: GameProps) {
         </div>
       )}
       <AnimatePresence mode="wait" initial={false}>
-        <motion.div
+        <m.div
           key={view.phase}
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
@@ -255,7 +255,7 @@ export default function MafiaGame({ params }: GameProps) {
           transition={{ duration: 0.22, ease: 'easeOut' }}
         >
           {screen}
-        </motion.div>
+        </m.div>
       </AnimatePresence>
     </>
   );

@@ -1,4 +1,4 @@
-import { motion } from 'motion/react';
+import { m } from 'motion/react';
 import { ClientMessage, PlayerView } from '@/games/mafia/engine/types';
 import { fadeUp, popIn, staggerParent } from '@/anim';
 import { ROLE_INFO } from '@/games/mafia/ui/roles';
@@ -73,31 +73,26 @@ export default function Night({ view, send }: Props) {
 
   return (
     <div className="app">
-      <motion.div
-        className="card card-night"
-        variants={staggerParent}
-        initial="hidden"
-        animate="show"
-      >
+      <m.div className="card card-night" variants={staggerParent} initial="hidden" animate="show">
         <NightSky />
-        <motion.p className="muted center" variants={fadeUp}>
+        <m.p className="muted center" variants={fadeUp}>
           Night {view.round} — you are the
-        </motion.p>
-        <motion.h1 className={`role-title center ${info.cssClass}`} variants={fadeUp}>
+        </m.p>
+        <m.h1 className={`role-title center ${info.cssClass}`} variants={fadeUp}>
           {info.label}
-        </motion.h1>
-        <motion.p className="center" variants={fadeUp}>
+        </m.h1>
+        <m.p className="center" variants={fadeUp}>
           {NIGHT_PROMPT[role]}
-        </motion.p>
+        </m.p>
 
-        <motion.div className="grid" variants={staggerParent}>
+        <m.div className="grid" variants={staggerParent}>
           {view.nightOptions.map((id) => {
             const target = view.players.find((p) => p.id === id);
             const pickers = view.mafiaPicks
               ? Object.entries(view.mafiaPicks).filter(([m, t]) => t === id && m !== view.me.id)
               : [];
             return (
-              <motion.button
+              <m.button
                 key={id}
                 className={`chip${view.myNightPick === id ? ' chip-selected' : ''}`}
                 onClick={() => send({ t: 'nightAct', targetId: id })}
@@ -112,27 +107,27 @@ export default function Night({ view, send }: Props) {
                     picked by {pickers.map(([m]) => nameOf(m)).join(', ')}
                   </span>
                 )}
-              </motion.button>
+              </m.button>
             );
           })}
-        </motion.div>
+        </m.div>
 
-        <motion.p className="muted center" variants={fadeUp}>
+        <m.p className="muted center" variants={fadeUp}>
           {view.myNightPick
             ? `Your pick: ${nameOf(view.myNightPick)} — you can change it until everyone has acted.`
             : `Waiting for ${view.nightPending ?? 0} player${view.nightPending === 1 ? '' : 's'}…`}
-        </motion.p>
+        </m.p>
         {view.me.isHost && (view.nightPending ?? 0) > 0 && (
-          <motion.button
+          <m.button
             className="btn btn-ghost btn-small"
             onClick={() => send({ t: 'skipNight' })}
             variants={fadeUp}
             whileTap={{ scale: 0.97 }}
           >
             Stalled? Resolve the night now ({view.nightPending} still acting)
-          </motion.button>
+          </m.button>
         )}
-      </motion.div>
+      </m.div>
     </div>
   );
 }

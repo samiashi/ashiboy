@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { motion } from 'motion/react';
+import { m } from 'motion/react';
 import type { StoredSession } from '@/games/mafia/net/persistence';
 import { fadeUp, popIn, staggerParent } from '@/anim';
 import { AVATARS, randomAvatar } from '@/games/mafia/ui/avatars';
@@ -38,7 +38,7 @@ export default function Home({
   return (
     <div className="app">
       {session && (
-        <motion.div className="card rejoin-card" variants={popIn} initial="hidden" animate="show">
+        <m.div className="card rejoin-card" variants={popIn} initial="hidden" animate="show">
           <p className="muted center">You have a seat in an ongoing game</p>
           <button
             className="btn btn-primary"
@@ -50,27 +50,27 @@ export default function Home({
           <button className="btn btn-ghost btn-small" onClick={onForgetSession}>
             Dismiss
           </button>
-        </motion.div>
+        </m.div>
       )}
 
-      <motion.div
+      <m.div
         className="card card-luxe hero"
         variants={staggerParent}
         initial="hidden"
         animate="show"
       >
-        <motion.p className="eyebrow center" variants={fadeUp}>
+        <m.p className="eyebrow center" variants={fadeUp}>
           The house presents
-        </motion.p>
-        <motion.h1 className="title title-shimmer" variants={fadeUp}>
+        </m.p>
+        <m.h1 className="title title-shimmer" variants={fadeUp}>
           Mafia
-        </motion.h1>
-        <motion.p className="muted center" variants={fadeUp}>
+        </m.h1>
+        <m.p className="muted center" variants={fadeUp}>
           A game of hidden identity and deception. This app replaces the moderator — everyone gets
           to play.
-        </motion.p>
+        </m.p>
 
-        <motion.input
+        <m.input
           className="input"
           placeholder="Your name"
           value={name}
@@ -80,12 +80,12 @@ export default function Home({
           variants={fadeUp}
         />
 
-        <motion.p className="muted picker-label center" variants={fadeUp}>
+        <m.p className="muted picker-label center" variants={fadeUp}>
           Pick your avatar
-        </motion.p>
-        <motion.div className="avatar-grid" variants={staggerParent}>
+        </m.p>
+        <m.div className="avatar-grid" variants={staggerParent}>
           {AVATARS.map((a) => (
-            <motion.button
+            <m.button
               key={a}
               className={`avatar-option${avatar === a ? ' avatar-selected' : ''}`}
               onClick={() => setAvatar(a)}
@@ -94,11 +94,11 @@ export default function Home({
               whileTap={{ scale: 0.88 }}
             >
               {a}
-            </motion.button>
+            </m.button>
           ))}
-        </motion.div>
+        </m.div>
 
-        <motion.button
+        <m.button
           className="btn btn-primary"
           disabled={!nameOk || connecting}
           onClick={() => onCreate(name, avatar)}
@@ -106,13 +106,13 @@ export default function Home({
           whileTap={{ scale: 0.97 }}
         >
           {connecting ? 'Connecting…' : 'Create a game'}
-        </motion.button>
+        </m.button>
 
-        <motion.div className="divider" variants={fadeUp}>
+        <m.div className="divider" variants={fadeUp}>
           <span>or join a friend</span>
-        </motion.div>
+        </m.div>
 
-        <motion.div className="row" variants={fadeUp}>
+        <m.div className="row" variants={fadeUp}>
           <input
             className="input code-input"
             placeholder="CODE"
@@ -122,21 +122,21 @@ export default function Home({
             autoComplete="off"
             onChange={(e) => setCode(e.target.value.toUpperCase())}
           />
-          <motion.button
+          <m.button
             className="btn"
             disabled={!nameOk || code.trim().length !== 6 || connecting}
             onClick={() => onJoin(code.trim(), name, avatar)}
             whileTap={{ scale: 0.95 }}
           >
             Join
-          </motion.button>
-        </motion.div>
+          </m.button>
+        </m.div>
 
         {error && <p className="error">{error}</p>}
         <a className="back-link" href="#/">
           ← All games
         </a>
-      </motion.div>
+      </m.div>
 
       <HowToPlay />
     </div>

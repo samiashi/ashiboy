@@ -1,4 +1,4 @@
-import { motion } from 'motion/react';
+import { m } from 'motion/react';
 import { ClientMessage, PlayerView } from '@/games/mafia/engine/types';
 import { fadeUp, popIn, springGentle, staggerParent } from '@/anim';
 
@@ -27,18 +27,18 @@ export default function Voting({ view, send }: Props) {
 
   return (
     <div className="app">
-      <motion.div className="card" variants={staggerParent} initial="hidden" animate="show">
-        <motion.h1 className="title-sm center" variants={fadeUp}>
+      <m.div className="card" variants={staggerParent} initial="hidden" animate="show">
+        <m.h1 className="title-sm center" variants={fadeUp}>
           Vote
-        </motion.h1>
+        </m.h1>
         {view.me.alive ? (
           <>
-            <motion.p className="muted center" variants={fadeUp}>
+            <m.p className="muted center" variants={fadeUp}>
               Who should be eliminated? Votes are public.
-            </motion.p>
-            <motion.div className="grid" variants={staggerParent}>
+            </m.p>
+            <m.div className="grid" variants={staggerParent}>
               {candidates.map((p) => (
-                <motion.button
+                <m.button
                   key={p.id}
                   className={`chip${view.myVote === p.id ? ' chip-selected' : ''}`}
                   onClick={() => send({ t: 'vote', targetId: p.id })}
@@ -46,24 +46,24 @@ export default function Voting({ view, send }: Props) {
                   whileTap={{ scale: 0.94 }}
                 >
                   <span className="avatar">{p.avatar}</span> {p.name}
-                </motion.button>
+                </m.button>
               ))}
-              <motion.button
+              <m.button
                 className={`chip chip-abstain${view.myVote === null ? ' chip-selected' : ''}`}
                 onClick={() => send({ t: 'vote', targetId: null })}
                 variants={popIn}
                 whileTap={{ scale: 0.94 }}
               >
                 Abstain
-              </motion.button>
-            </motion.div>
+              </m.button>
+            </m.div>
           </>
         ) : (
-          <motion.p className="muted center" variants={fadeUp}>
+          <m.p className="muted center" variants={fadeUp}>
             You were eliminated — watching the vote.
-          </motion.p>
+          </m.p>
         )}
-      </motion.div>
+      </m.div>
 
       {view.investigation && (
         <div className="card investigation">
@@ -75,33 +75,33 @@ export default function Voting({ view, send }: Props) {
         </div>
       )}
 
-      <motion.div className="card" variants={staggerParent} initial="hidden" animate="show">
-        <motion.h2 className="section-title" variants={fadeUp}>
+      <m.div className="card" variants={staggerParent} initial="hidden" animate="show">
+        <m.h2 className="section-title" variants={fadeUp}>
           Ballot ({votedCount}/{alive.length})
-        </motion.h2>
+        </m.h2>
         <ul className="player-list">
           {alive.map((p) => (
-            <motion.li key={p.id} className="player-row" variants={fadeUp}>
+            <m.li key={p.id} className="player-row" variants={fadeUp}>
               <span>
                 <span className="avatar">{p.avatar}</span>
                 {p.name}
               </span>
               <span className="muted">{p.id in votes ? `→ ${nameOf(votes[p.id])}` : '…'}</span>
-            </motion.li>
+            </m.li>
           ))}
         </ul>
         {view.me.isHost && missing > 0 && (
-          <motion.button
+          <m.button
             className="btn btn-ghost btn-small"
             onClick={() => send({ t: 'closeVote' })}
             variants={fadeUp}
             whileTap={{ scale: 0.97 }}
           >
             Stalled? Close the vote now ({missing} missing)
-          </motion.button>
+          </m.button>
         )}
         {ranked.length > 0 && (
-          <motion.div className="tally" variants={fadeUp}>
+          <m.div className="tally" variants={fadeUp}>
             {ranked.map(([id, count]) => {
               const target = playerOf(id);
               return (
@@ -114,7 +114,7 @@ export default function Voting({ view, send }: Props) {
                     <span className="tally-count">{count}</span>
                   </div>
                   <div className="tally-track">
-                    <motion.div
+                    <m.div
                       className="tally-fill"
                       initial={{ width: 0 }}
                       animate={{ width: `${top > 0 ? (count / top) * 100 : 0}%` }}
@@ -124,9 +124,9 @@ export default function Voting({ view, send }: Props) {
                 </div>
               );
             })}
-          </motion.div>
+          </m.div>
         )}
-      </motion.div>
+      </m.div>
     </div>
   );
 }

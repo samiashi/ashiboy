@@ -1,4 +1,4 @@
-import { motion } from 'motion/react';
+import { m } from 'motion/react';
 import { ClientMessage, PlayerView } from '@/games/mafia/engine/types';
 import { fadeUp, springGentle, staggerParent } from '@/anim';
 
@@ -15,7 +15,7 @@ export default function Day({ view, send }: Props) {
   const alive = view.players.filter((p) => p.alive);
 
   const investigationCard = view.investigation && (
-    <motion.div
+    <m.div
       className="card investigation"
       initial={{ opacity: 0, y: 14 }}
       animate={{ opacity: 1, y: 0 }}
@@ -26,13 +26,13 @@ export default function Day({ view, send }: Props) {
         <strong>{nameOf(view.investigation.targetId)}</strong>{' '}
         {view.investigation.isMafia ? 'IS a member of the mafia.' : 'is NOT mafia.'}
       </p>
-    </motion.div>
+    </m.div>
   );
 
   if (view.phase === 'dayReveal') {
     return (
       <div className="app">
-        <motion.article
+        <m.article
           className="gazette"
           initial={{ opacity: 0, y: 30, rotate: -2.5 }}
           animate={{ opacity: 1, y: 0, rotate: -0.6 }}
@@ -54,26 +54,26 @@ export default function Day({ view, send }: Props) {
               ? 'The town mourns. The mafia walks among us.'
               : 'No incidents reported. Stay vigilant.'}
           </p>
-        </motion.article>
+        </m.article>
 
-        <motion.div
+        <m.div
           className="card center"
           initial={{ opacity: 0, y: 14 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ ...springGentle, delay: 0.12 }}
         >
           {view.me.isHost ? (
-            <motion.button
+            <m.button
               className="btn btn-primary"
               onClick={() => send({ t: 'advance' })}
               whileTap={{ scale: 0.97 }}
             >
               Start the discussion
-            </motion.button>
+            </m.button>
           ) : (
             <p className="muted">Waiting for {hostName}…</p>
           )}
-        </motion.div>
+        </m.div>
         {investigationCard}
       </div>
     );
@@ -81,39 +81,39 @@ export default function Day({ view, send }: Props) {
 
   return (
     <div className="app">
-      <motion.div className="card" variants={staggerParent} initial="hidden" animate="show">
-        <motion.h1 className="title-sm center" variants={fadeUp}>
+      <m.div className="card" variants={staggerParent} initial="hidden" animate="show">
+        <m.h1 className="title-sm center" variants={fadeUp}>
           Discussion
-        </motion.h1>
-        <motion.p className="muted center" variants={fadeUp}>
+        </m.h1>
+        <m.p className="muted center" variants={fadeUp}>
           Talk it out. Who's acting suspicious? Who's defending whom?
-        </motion.p>
+        </m.p>
         <ul className="player-list">
           {alive.map((p) => (
-            <motion.li key={p.id} className="player-row" variants={fadeUp}>
+            <m.li key={p.id} className="player-row" variants={fadeUp}>
               <span>
                 <span className="avatar">{p.avatar}</span>
                 {p.name}
                 {p.id === view.me.id && <span className="muted"> (you)</span>}
               </span>
-            </motion.li>
+            </m.li>
           ))}
         </ul>
         {view.me.isHost ? (
-          <motion.button
+          <m.button
             className="btn btn-primary"
             onClick={() => send({ t: 'advance' })}
             variants={fadeUp}
             whileTap={{ scale: 0.97 }}
           >
             Start the vote
-          </motion.button>
+          </m.button>
         ) : (
-          <motion.p className="muted center" variants={fadeUp}>
+          <m.p className="muted center" variants={fadeUp}>
             Waiting for {hostName} to start the vote…
-          </motion.p>
+          </m.p>
         )}
-      </motion.div>
+      </m.div>
       {investigationCard}
     </div>
   );

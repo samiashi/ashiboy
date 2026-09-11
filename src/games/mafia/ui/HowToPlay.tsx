@@ -1,4 +1,4 @@
-import { motion } from 'motion/react';
+import { m } from 'motion/react';
 import { ROLE_INFO } from '@/games/mafia/ui/roles';
 import type { Role } from '@/games/mafia/engine/types';
 
@@ -7,7 +7,7 @@ const ROLES: Role[] = ['mafia', 'detective', 'doctor', 'villager'];
 /** Collapsible rules card for players who've never played Mafia. */
 export default function HowToPlay() {
   return (
-    <motion.details
+    <m.details
       className="card howto"
       initial={{ opacity: 0, y: 14 }}
       animate={{ opacity: 1, y: 0 }}
@@ -56,6 +56,6 @@ export default function HowToPlay() {
           even in the middle of the night.
         </p>
       </div>
-    </motion.details>
+    </m.details>
   );
 }

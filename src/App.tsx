@@ -1,5 +1,5 @@
 import { Suspense, useEffect, useReducer } from 'react';
-import { AnimatePresence, motion } from 'motion/react';
+import { AnimatePresence, m } from 'motion/react';
 import { games } from '@/games/registry';
 import Hub from '@/hub/Hub';
 import { screenSwap } from '@/anim';
@@ -35,7 +35,7 @@ export default function App() {
       }
     >
       <AnimatePresence mode="wait" initial={false}>
-        <motion.div
+        <m.div
           key={game ? game.slug : '/'}
           initial={{ opacity: 0, y: 14 }}
           animate={{ opacity: 1, y: 0 }}
@@ -43,7 +43,7 @@ export default function App() {
           transition={screenSwap}
         >
           {game ? <game.component params={params} /> : <Hub />}
-        </motion.div>
+        </m.div>
       </AnimatePresence>
     </Suspense>
   );

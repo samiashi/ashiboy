@@ -1,4 +1,4 @@
-import { motion } from 'motion/react';
+import { m } from 'motion/react';
 import { ClientMessage, PlayerView } from '@/games/mafia/engine/types';
 import { ROLE_INFO } from '@/games/mafia/ui/roles';
 
@@ -16,7 +16,7 @@ export default function VoteResult({ view, send }: Props) {
     <div className="app">
       <div className="card center">
         <h1 className="title-sm">The verdict</h1>
-        <motion.div
+        <m.div
           initial={{ scale: 2.4, opacity: 0, rotate: -18 }}
           animate={{ scale: 1, opacity: 1, rotate: -7 }}
           transition={{ type: 'spring', stiffness: 300, damping: 17 }}
@@ -24,7 +24,7 @@ export default function VoteResult({ view, send }: Props) {
           <span className={`stamp${result?.eliminatedId ? '' : ' stamp-spared'}`}>
             {result?.eliminatedId ? 'Eliminated' : 'No lynch'}
           </span>
-        </motion.div>
+        </m.div>
         {result?.eliminatedId ? (
           <p className="death-note">
             <strong>{nameOf(result.eliminatedId)}</strong> was eliminated. They were{' '}
@@ -37,13 +37,13 @@ export default function VoteResult({ view, send }: Props) {
           <p className="death-note">No majority — nobody was eliminated.</p>
         )}
         {view.me.isHost ? (
-          <motion.button
+          <m.button
             className="btn btn-primary"
             onClick={() => send({ t: 'advance' })}
             whileTap={{ scale: 0.97 }}
           >
             Continue to night {view.round + 1}
-          </motion.button>
+          </m.button>
         ) : (
           <p className="muted">Waiting for {hostName}…</p>
         )}

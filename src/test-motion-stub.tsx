@@ -70,7 +70,7 @@ function factory(tag: string): React.ComponentType<Record<string, unknown>> {
   return Stub as React.ComponentType<Record<string, unknown>>;
 }
 
-export const motion: Record<string, React.ComponentType<Record<string, unknown>>> = new Proxy(
+const motionProxy: Record<string, React.ComponentType<Record<string, unknown>>> = new Proxy(
   {},
   {
     get: (_target, tag: string) => {
@@ -85,6 +85,11 @@ export const motion: Record<string, React.ComponentType<Record<string, unknown>>
   },
 );
 
+// NOTE: `motion` is intentionally NOT exported — production uses the lighter
+// `m` (LazyMotion/domAnimation subset), and tests should fail if `motion`
+// sneaks back in.
+export const m = motionProxy;
+
 export function AnimatePresence({ children }: { children?: React.ReactNode }): React.ReactNode {
   return React.createElement(React.Fragment, null, children);
 }
@@ -92,6 +97,12 @@ export function AnimatePresence({ children }: { children?: React.ReactNode }): R
 export function MotionConfig({ children }: { children?: React.ReactNode }): React.ReactNode {
   return React.createElement(React.Fragment, null, children);
 }
+
+export function LazyMotion({ children }: { children?: React.ReactNode }): React.ReactNode {
+  return React.createElement(React.Fragment, null, children);
+}
+
+export const domAnimation = {};
 
 export function useReducedMotion(): boolean {
   return false;

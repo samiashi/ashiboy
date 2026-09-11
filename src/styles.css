@@ -463,3 +463,28 @@ body::before {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ---------- touch & small screens ---------- */
+
+.btn,
+.game-card {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+.game-card-body {
+  min-width: 0;
+}
+
+.row .input {
+  flex: 1;
+  min-width: 0;
+}
+
+.row .btn {
+  flex-shrink: 0;
+}
+
+.hub-hero .title {
+  font-size: clamp(2.4rem, 14vw, 3.2rem);
+}
