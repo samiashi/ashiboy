@@ -53,8 +53,9 @@ name + avatar are remembered from Mafia, never asked twice.
 - **Two team columns (Red / Blue).** Players tap to join a side; anyone can
   switch freely until start. A **randomize** button splits evenly.
 - **Spymaster = a star toggle on your own seat**, one per team. Start is
-  blocked until each team has exactly one spymaster and at least one
-  operative (minimum 4 players total).
+  blocked until every seat has a team and each team has exactly one spymaster
+  and at least one operative (minimum 4 players total — enforced in both the
+  engine and the lobby).
 - Host config: **turn timer** (Off / 1 / 2 / 3 / 5 min, default 3:00 — same
   component pattern as Mafia's discussion timer). Nothing else to configure.
 - Host can remove wrong seats (same as Mafia). No one joins after the deal.
@@ -91,7 +92,10 @@ name + avatar are remembered from Mafia, never asked twice.
   immediately (even mid-opponent-turn); assassin → guesser's team loses
   immediately. Winner banner + full key reveal + fanfare.
 - **Rematch in one tap:** same teams and spymasters, fresh board and fresh
-  starting team. Back-to-lobby to reshuffle teams or swap spymasters.
+  starting team. Back-to-lobby to reshuffle teams or swap spymasters (rematch
+  falls back to the lobby only when the teams no longer satisfy start rules).
+- Ejected seats have their token revoked and can't silently reclaim themselves;
+  full rooms get an explicit "Room is full." error instead of a stuck join.
 
 ## Roles & views (privacy contracts)
 

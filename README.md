@@ -114,7 +114,8 @@ every game, rethemable through CSS custom properties.
 - **Sounds are synthesized** with the Web Audio API — no audio files, works
   offline. A mute toggle lives in the game top bar (preference persists).
 - **Identity lives in localStorage.** Name + avatar (`ashiboy-profile`, shared
-  across future games) and the current seat (`ashiboy-mafia-session`).
+  across future games) and the current seat (`ashiboy-mafia-session`,
+  `ashiboy-codenames-session`).
 - **Avatars are emoji** — no image assets, easy to tell apart at a glance.
 - **Imports use the `@/` alias** (enforced by `npm run lint`, readable no
   matter how deep a file lives).
@@ -128,7 +129,7 @@ every game, rethemable through CSS custom properties.
 
 ## 📋 Status
 
-Implemented and verified (`tsc`, 115 tests, production build all green):
+Implemented and verified (`tsc`, 134 tests, production build all green):
 
 - 🃏 Full moderator-free Mafia flow: lobby → roles → night → day → vote → win,
   with 1–4+ mafia, optional detective and doctor, suggested setups per player

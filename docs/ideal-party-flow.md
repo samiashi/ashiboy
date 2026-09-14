@@ -51,13 +51,15 @@ optional, remembered next visit. No validation beyond non-empty.
 - Starting requires the minimum headcount with a clear message otherwise.
 - Anyone can join until the game starts; after that the room locks.
 - The host can remove a seat that shouldn't be there (wrong room, duplicate).
+  Mid-game ejection revokes the seat's token so it can't silently reclaim itself.
 
 ### 3. Role reveal — dealing secrets
 
 - Private by default: roles are never on screen until the owner asks to see
   them (tap-to-reveal), with an explicit "hide your phone" cue.
 - Everyone confirms before the game proceeds; the waiting count reflects
-  players who can actually act.
+  players who can actually act. If one device stalls, the host can force-start
+  the night.
 - Nothing about anyone's role leaks to any other device (verified by test,
   not by trust).
 
@@ -96,10 +98,11 @@ optional, remembered next visit. No validation beyond non-empty.
 - One tap per candidate, changeable until the vote closes; abstain allowed.
 - Votes are public and the tally is live — tension is the point.
 - Can't vote for the dead or yourself; the dead can't vote.
-- Resolution is automatic when everyone who can vote has voted; ties are
-  communicated, never ambiguous.
+- Resolution is automatic when everyone who can vote has voted; ties eliminate
+  nobody, and zero votes is "no majority" (not a tie).
 - **Anti-stall (critical):** same as night — one missing voter must not freeze
-  the table (host skip/timeout counting them as abstain).
+  the table (disconnecting auto-resolves when nobody is left waiting; the host
+  can also close the vote, counting missing voters as abstain).
 
 ### 8. Elimination + win — the payoff
 
