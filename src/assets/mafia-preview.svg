@@ -10,6 +10,10 @@
       <stop offset="0.6" stop-color="#fdf6e1" stop-opacity="0.18"/>
       <stop offset="1" stop-color="#fdf6e1" stop-opacity="0"/>
     </radialGradient>
+    <radialGradient id="mafia-halo" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#c9a227" stop-opacity="0.22"/>
+      <stop offset="1" stop-color="#c9a227" stop-opacity="0"/>
+    </radialGradient>
   </defs>
   <rect width="800" height="600" fill="url(#mafia-sky)"/>
   <g fill="#ffffff">
@@ -64,5 +68,34 @@
     <rect x="706" y="465" width="9" height="13"/>
     <rect x="728" y="465" width="9" height="13"/>
   </g>
-  <text x="398" y="330" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="170" font-weight="bold" letter-spacing="10" fill="#e5484d">M</text>
+  <circle cx="400" cy="330" r="155" fill="url(#mafia-halo)"/>
+  <g>
+    <path d="M 195 600 C 215 465, 295 425, 400 425 C 505 425, 585 465, 605 600 Z" fill="#14141f" stroke="#c9a227" stroke-opacity="0.4" stroke-width="2"/>
+    <g stroke="#c9a227" stroke-opacity="0.16" stroke-width="2">
+      <line x1="260" y1="480" x2="250" y2="600"/>
+      <line x1="300" y1="460" x2="295" y2="600"/>
+      <line x1="500" y1="460" x2="505" y2="600"/>
+      <line x1="540" y1="480" x2="550" y2="600"/>
+    </g>
+    <polygon points="368,428 432,428 400,530" fill="#f2e8c8"/>
+    <polygon points="390,432 410,432 406,478 400,498 394,478" fill="#e5484d"/>
+    <polygon points="340,428 372,432 358,525 318,472" fill="#0b0b10" stroke="#c9a227" stroke-opacity="0.35" stroke-width="1.5"/>
+    <polygon points="460,428 428,432 442,525 482,472" fill="#0b0b10" stroke="#c9a227" stroke-opacity="0.35" stroke-width="1.5"/>
+    <polygon points="288,508 312,508 300,484" fill="#c9a227"/>
+    <circle cx="472" cy="492" r="5" fill="#c9a227"/>
+    <rect x="376" y="388" width="48" height="44" rx="10" fill="#d9a877"/>
+    <ellipse cx="400" cy="342" rx="56" ry="66" fill="#e8c39e"/>
+    <ellipse cx="400" cy="316" rx="56" ry="24" fill="#0e0e1c" opacity="0.55"/>
+    <ellipse cx="377" cy="338" rx="11" ry="6" fill="#fdf6e1"/>
+    <ellipse cx="423" cy="338" rx="11" ry="6" fill="#fdf6e1"/>
+    <circle cx="379" cy="339" r="3.2" fill="#0b0b10"/>
+    <circle cx="421" cy="339" r="3.2" fill="#0b0b10"/>
+    <rect x="364" y="326" width="26" height="6" rx="3" fill="#0b0b10" opacity="0.85"/>
+    <rect x="410" y="326" width="26" height="6" rx="3" fill="#0b0b10" opacity="0.85"/>
+    <path d="M 384 376 Q 404 384 422 370" stroke="#5a2e1a" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+    <ellipse cx="400" cy="286" rx="98" ry="23" fill="#0b0b10" stroke="#c9a227" stroke-width="2"/>
+    <path d="M 328 286 C 334 218, 366 198, 400 198 C 434 198, 466 218, 472 286 Z" fill="#15151f" stroke="#c9a227" stroke-opacity="0.45" stroke-width="2"/>
+    <path d="M 333 264 C 362 276, 438 276, 467 264 L 467 282 C 438 294, 362 294, 333 282 Z" fill="#c9a227"/>
+    <ellipse cx="372" cy="228" rx="10" ry="16" fill="#ffffff" opacity="0.08"/>
+  </g>
 </svg>
