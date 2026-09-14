@@ -9,9 +9,20 @@ interface Props {
 
 /** Site chrome above every game: home link, current phase, mute toggle. */
 export function TopBar({ title, phaseLabel = '', muted, onToggleMute }: Props) {
+  const confirmLeave = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    // The host's tab is the room — leaving ends the game for everyone.
+    if (!window.confirm('Leave the game? The room ends for everyone if you host it.')) {
+      e.preventDefault();
+    }
+  };
   return (
     <div className="topbar">
-      <a className="topbar-link" href="#/">
+      <a
+        className="topbar-link"
+        href="#/"
+        onClick={confirmLeave}
+        aria-label="Ashiboy home — leaves the current game"
+      >
         Ashiboy
       </a>
       <span className="topbar-right">

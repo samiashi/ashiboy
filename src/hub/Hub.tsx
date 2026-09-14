@@ -1,7 +1,7 @@
 import { m } from 'motion/react';
 import { games } from '@/games/registry';
 import { fadeUp, staggerParent } from '@/anim';
-import comingSoonArt from '@/assets/coming-soon.svg';
+import comingSoonArt from '@/assets/coming-soon.svg?url';
 
 export default function Hub() {
   return (
@@ -24,7 +24,7 @@ export default function Hub() {
         {games.map((g) => (
           <m.a key={g.slug} className="card game-tile" href={`#${g.slug}`} variants={fadeUp}>
             <span className="game-tile-art">
-              <img src={g.preview} alt={`${g.title} artwork`} loading="lazy" />
+              <img src={g.preview} alt={`${g.title} artwork`} loading="lazy" decoding="async" />
             </span>
             <span className="game-tile-body">
               <span className="display game-tile-title">{g.title}</span>
@@ -40,7 +40,7 @@ export default function Hub() {
         ))}
         <m.div className="card game-tile game-tile-disabled" variants={fadeUp}>
           <span className="game-tile-art">
-            <img src={comingSoonArt} alt="More games coming soon" loading="lazy" />
+            <img src={comingSoonArt} alt="More games coming soon" loading="lazy" decoding="async" />
           </span>
           <span className="game-tile-body">
             <span className="display game-tile-title">More games</span>

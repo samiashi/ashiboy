@@ -7,8 +7,11 @@ interface Props {
 export function Toast({ message, onDismiss }: Props) {
   if (!message) return null;
   return (
-    <div className="toast" onClick={onDismiss} role="alert">
-      {message}
+    <div className="toast" role="alert">
+      <span>{message}</span>
+      <button type="button" className="btn btn-ghost btn-mini" onClick={onDismiss}>
+        Dismiss
+      </button>
     </div>
   );
 }

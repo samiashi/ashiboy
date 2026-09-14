@@ -12,6 +12,32 @@ export default defineConfig({
     alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) },
   },
   plugins: [react()],
+  build: {
+    // Never inline assets as data URLs — tile art would bloat the initial JS
+    // instead of loading lazily via <img>.
+    assetsInlineLimit: 0,
+    rollupOptions: {
+      output: {
+        // Keep the initial download small and parallelizable: framework,
+        // animation, net, and QR code each get their own hashed chunk instead
+        // of one 300K+ serial download.
+        manualChunks(id) {
+          if (id.includes('node_modules')) {
+            if (
+              id.includes('/react-dom/') ||
+              id.includes('/react/') ||
+              id.includes('/scheduler/')
+            ) {
+              return 'vendor-react';
+            }
+            if (id.includes('motion')) return 'vendor-motion';
+            if (id.includes('/peerjs')) return 'vendor-peer';
+            if (id.includes('react-qr-code') || id.includes('/qr.js')) return 'vendor-qr';
+          }
+        },
+      },
+    },
+  },
   test: {
     // Engine tests run in node; UI tests opt into happy-dom per file via
     // `// @vitest-environment happy-dom`.

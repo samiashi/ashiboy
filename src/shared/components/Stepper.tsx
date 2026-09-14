@@ -8,6 +8,8 @@ interface Props {
   plusDisabled?: boolean;
   minusLabel?: string;
   plusLabel?: string;
+  /** Accessible context, e.g. "mafia count". Falls back to plain Decrease/Increase. */
+  label?: string;
 }
 
 /** Minus/plus stepper with a prominent center value. */
@@ -19,6 +21,7 @@ export function Stepper({
   plusDisabled,
   minusLabel = '−',
   plusLabel = '+',
+  label,
 }: Props) {
   return (
     <div className="stepper">
@@ -27,7 +30,7 @@ export function Stepper({
         onClick={onMinus}
         disabled={minusDisabled}
         whileTap={{ scale: 0.9 }}
-        aria-label="Decrease"
+        aria-label={label ? `Decrease ${label}` : 'Decrease'}
       >
         {minusLabel}
       </m.button>
@@ -37,7 +40,7 @@ export function Stepper({
         onClick={onPlus}
         disabled={plusDisabled}
         whileTap={{ scale: 0.9 }}
-        aria-label="Increase"
+        aria-label={label ? `Increase ${label}` : 'Increase'}
       >
         {plusLabel}
       </m.button>

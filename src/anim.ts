@@ -30,5 +30,5 @@ export const popIn: Variants = {
 /** Parent that staggers any children using item variants. */
 export const staggerParent: Variants = {
   hidden: {},
-  show: { transition: { staggerChildren: 0.055, delayChildren: 0.05 } },
+  show: { transition: { staggerChildren: 0.03, delayChildren: 0.02 } },
 };

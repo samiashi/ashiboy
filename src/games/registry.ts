@@ -1,6 +1,8 @@
 import { lazy, type ComponentType, type LazyExoticComponent } from 'react';
-import mafiaPreview from '@/assets/mafia-preview.svg';
-import codenamesPreview from '@/assets/codenames-preview.svg';
+// ?url + assetsInlineLimit:0 emits tile art as separate hashed files so the
+// bytes never inline into the initial JS bundle (fetched lazily via <img>).
+import mafiaPreview from '@/assets/mafia-preview.svg?url';
+import codenamesPreview from '@/assets/codenames-preview.svg?url';
 
 export interface GameProps {
   /** Query params from the hash route, e.g. '#/mafia?join=ABC123'. */

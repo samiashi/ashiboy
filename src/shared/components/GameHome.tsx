@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { m } from 'motion/react';
 import type { RoomTicket } from '@/shared/identity';
 import { fadeUp, popIn, staggerParent } from '@/anim';
@@ -21,6 +21,7 @@ export interface GameHomeProps {
   onJoin(code: string, name: string, avatar: string): void;
   onRejoin(session: RoomTicket): void;
   onForgetSession(): void;
+  onDismissError?(): void;
 }
 
 /**
@@ -42,10 +43,15 @@ export function GameHome({
   onJoin,
   onRejoin,
   onForgetSession,
+  onDismissError,
 }: GameHomeProps) {
   const [name, setName] = useState(prefillName);
-  const [avatar, setAvatar] = useState(prefillAvatar || randomAvatar());
-  const [code, setCode] = useState(prefillCode);
+  const [avatar, setAvatar] = useState(() => prefillAvatar || randomAvatar());
+  const [code, setCode] = useState(() => prefillCode.trim().toUpperCase());
+  // A second invite pasted while already on this page must reach the form.
+  useEffect(() => {
+    setCode(prefillCode.trim().toUpperCase());
+  }, [prefillCode]);
   const nameOk = name.trim().length > 0;
   // Creating and joining are mutually exclusive paths: typing a code (or
   // arriving with one from an invite link) means you're joining, not hosting.
@@ -88,6 +94,7 @@ export function GameHome({
         <m.input
           className="input"
           placeholder="Your name"
+          aria-label="Your name"
           value={name}
           maxLength={20}
           autoComplete="off"
@@ -95,7 +102,7 @@ export function GameHome({
           variants={fadeUp}
         />
 
-        <m.p className="muted picker-label center" variants={fadeUp}>
+        <m.p className="muted picker-label center" variants={fadeUp} id="avatar-label">
           Pick your avatar
         </m.p>
         <AvatarPicker value={avatar} onChange={setAvatar} />
@@ -120,6 +127,7 @@ export function GameHome({
           <input
             className="input code-input"
             placeholder="CODE"
+            aria-label="Room code"
             value={code}
             maxLength={6}
             autoCapitalize="characters"
@@ -129,14 +137,23 @@ export function GameHome({
           <m.button
             className="btn"
             disabled={!nameOk || code.trim().length !== 6 || connecting}
-            onClick={() => onJoin(code.trim(), name, avatar)}
+            onClick={() => onJoin(code.trim().toUpperCase(), name, avatar)}
             whileTap={{ scale: 0.95 }}
           >
             Join
           </m.button>
         </m.div>
 
-        {error && <p className="error">{error}</p>}
+        {error && (
+          <p className="error" role="alert">
+            {error}{' '}
+            {onDismissError && (
+              <button type="button" className="btn btn-ghost btn-mini" onClick={onDismissError}>
+                Dismiss error
+              </button>
+            )}
+          </p>
+        )}
         <a className="back-link" href="#/">
           ← All games
         </a>

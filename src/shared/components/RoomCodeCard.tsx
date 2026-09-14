@@ -1,8 +1,11 @@
-import { useState } from 'react';
+import { Suspense, lazy, useState } from 'react';
 import { m } from 'motion/react';
-import QRCode from 'react-qr-code';
 import { popIn } from '@/anim';
 import { INK, PAPER } from '@/shared/theme';
+
+// Split the QR renderer out of the game chunks — it is only needed in the
+// lobby, never on the join screen that loads first.
+const QRCode = lazy(() => import('react-qr-code'));
 
 interface Props {
   roomCode: string;
@@ -26,13 +29,26 @@ export function RoomCodeCard({ roomCode, inviteLink }: Props) {
   return (
     <m.div className="card card-luxe center" variants={popIn} initial="hidden" animate="show">
       <p className="eyebrow">Room code — share it with everyone</p>
-      <p className="big-code">{roomCode}</p>
+      <p className="big-code" aria-label={`Room code ${roomCode}`}>
+        {roomCode}
+      </p>
       <div className="qr-box">
-        <QRCode value={inviteLink} size={148} bgColor={PAPER} fgColor={INK} />
+        <Suspense fallback={<div className="qr-placeholder" aria-hidden="true" />}>
+          <QRCode
+            value={inviteLink || 'pending'}
+            size={148}
+            bgColor={PAPER}
+            fgColor={INK}
+            aria-label={`Invite QR code for room ${roomCode}`}
+          />
+        </Suspense>
       </div>
       <button className="btn btn-ghost" onClick={copyLink}>
         {copied ? 'Copied to clipboard!' : 'Copy invite link'}
       </button>
+      <span className="sr-only" role="status" aria-live="polite">
+        {copied ? 'Invite link copied to clipboard' : ''}
+      </span>
     </m.div>
   );
 }

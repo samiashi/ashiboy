@@ -42,9 +42,14 @@ function audio(): AudioContext | null {
   }
 }
 
-// Prime the context on any tap, so later network-triggered sounds are allowed.
+// Prime the context on the first tap, so later network-triggered sounds are
+// allowed. Once-only — the old version resumed the AudioContext on every tap.
 if (typeof document !== 'undefined') {
-  document.addEventListener('pointerdown', () => audio(), { capture: true, passive: true });
+  document.addEventListener('pointerdown', () => audio(), {
+    capture: true,
+    passive: true,
+    once: true,
+  });
 }
 
 export interface ToneOpts {
@@ -75,14 +80,25 @@ export function tone(
   osc.stop(t0 + dur + 0.05);
 }
 
+const noiseCache = new Map<string, AudioBuffer>();
+
 export function noise(dur = 0.2, cutoff = 800, gain = 0.1, at = 0) {
   const c = audio();
   if (!c) return;
   const t0 = c.currentTime + at;
+  // Cache the shaped noise buffer per (sampleRate, length) — the old code
+  // re-ran a ~29k-iteration Math.random fill on every cue.
   const len = Math.max(1, Math.floor(c.sampleRate * dur));
-  const buf = c.createBuffer(1, len, c.sampleRate);
-  const data = buf.getChannelData(0);
-  for (let i = 0; i < len; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / len);
+  const key = `${c.sampleRate}:${len}`;
+  let buf = noiseCache.get(key);
+  if (!buf) {
+    buf = c.createBuffer(1, len, c.sampleRate);
+    const data = buf.getChannelData(0);
+    for (let i = 0; i < len; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / len);
+    // Cap the cache — cues use a handful of durations.
+    if (noiseCache.size > 8) noiseCache.clear();
+    noiseCache.set(key, buf);
+  }
   const src = c.createBufferSource();
   src.buffer = buf;
   const filter = c.createBiquadFilter();
