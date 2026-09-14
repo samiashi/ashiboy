@@ -50,8 +50,10 @@ describe('Mystery GameOver', () => {
 
     expect(screen.getByText('Case solved')).toBeTruthy();
     expect(screen.getByText(/Wren Halloway/)).toBeTruthy();
-    await user.click(screen.getByRole('button', { name: 'Open a new case' }));
+    await user.click(screen.getByRole('button', { name: 'Rematch — same case' }));
     expect(send).toHaveBeenCalledWith({ t: 'playAgain' });
+    await user.click(screen.getByRole('button', { name: 'Back to lobby' }));
+    expect(send).toHaveBeenCalledWith({ t: 'toLobby' });
   });
 
   it('reveals the truth when the trail goes cold', () => {

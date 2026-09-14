@@ -337,15 +337,26 @@ describe('verdict mini-game', () => {
     expect(viewFor(s, 'h').solution).toEqual(CORRECT);
   });
 
-  it('rematches back to a clean lobby', () => {
+  it('rematches to the same briefing with fresh tokens', () => {
     let s = toAccusation();
     s = run(s, { t: 'accuse', id: 'p1', ...CORRECT });
     s = run(s, { t: 'playAgain', id: 'h' });
+    expect(s.phase).toBe('briefing');
+    expect(s.caseId).not.toBeNull();
+    expect(s.solution).not.toBeNull();
+    expect(s.players).toHaveLength(3);
+    expect(s.attempts).toEqual([]);
+    expect(s.searchLeft).toBe(s.config.searchTokens);
+    expect(s.pressureLeft).toBe(s.config.pressureTokens);
+  });
+
+  it('returns to the lobby to switch cases', () => {
+    let s = toAccusation();
+    s = run(s, { t: 'accuse', id: 'p1', ...CORRECT });
+    s = run(s, { t: 'toLobby', id: 'h' });
     expect(s.phase).toBe('lobby');
     expect(s.caseId).toBeNull();
     expect(s.solution).toBeNull();
-    expect(s.players).toHaveLength(3);
-    expect(s.attempts).toEqual([]);
   });
 });
 
@@ -426,5 +437,19 @@ describe('view privacy', () => {
     expect(view.winner).toBe('solved');
     expect(view.solution).toEqual(CORRECT);
     expect(JSON.stringify(view)).not.toContain('tok-');
+  });
+
+  it('clamps pressure tokens to at least 1 and clears stale deadlines', () => {
+    let s = makeLobby();
+    s = run(s, {
+      t: 'setConfig',
+      id: 'h',
+      config: { ...s.config, pressureTokens: 0 },
+    });
+    expect(s.config.pressureTokens).toBe(1);
+    s = run(startCase(s), { t: 'advance', id: 'h' });
+    s = run(s, { t: 'advance', id: 'h' });
+    expect(s.phase).toBe('alibis');
+    expect(s.searchEndsAt).toBeUndefined();
   });
 });

@@ -57,6 +57,22 @@ export class GameClient {
           this.playerId = msg.playerId;
           saveSession({ code: normalized, playerId: msg.playerId, token: msg.token, name, avatar });
         } else if (msg.t === 'state') {
+          // Malformed/lagging views must not crash render — validate shape first.
+          const view = (msg as { view?: unknown }).view as {
+            phase?: unknown;
+            players?: unknown;
+            me?: unknown;
+          };
+          if (
+            !view ||
+            typeof view !== 'object' ||
+            typeof view.phase !== 'string' ||
+            !Array.isArray(view.players) ||
+            !view.me ||
+            typeof view.me !== 'object'
+          ) {
+            return;
+          }
           this.onView(msg.view);
         } else if (msg.t === 'error') {
           if (msg.message === 'rejoin-failed' && rejoin) {

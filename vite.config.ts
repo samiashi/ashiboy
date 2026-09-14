@@ -30,7 +30,7 @@ export default defineConfig({
             ) {
               return 'vendor-react';
             }
-            if (id.includes('motion')) return 'vendor-motion';
+            if (/\/motion(-dom)?\//.test(id)) return 'vendor-motion';
             if (id.includes('/peerjs')) return 'vendor-peer';
             if (id.includes('react-qr-code') || id.includes('/qr.js')) return 'vendor-qr';
           }

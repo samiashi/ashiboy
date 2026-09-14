@@ -88,7 +88,18 @@ export default function Voting({ view, send }: Props) {
                 <span className="avatar">{p.avatar}</span>
                 {p.name}
               </span>
-              <span className="muted">{p.id in votes ? `→ ${nameOf(votes[p.id])}` : '…'}</span>
+              <span className="row-end">
+                <span className="muted">{p.id in votes ? `→ ${nameOf(votes[p.id])}` : '…'}</span>
+                {view.me.isHost && p.id !== view.me.id && (
+                  <button
+                    className="btn btn-ghost btn-mini"
+                    aria-label={`Remove ${p.name}`}
+                    onClick={() => send({ t: 'remove', targetId: p.id })}
+                  >
+                    Remove
+                  </button>
+                )}
+              </span>
             </m.li>
           ))}
         </ul>

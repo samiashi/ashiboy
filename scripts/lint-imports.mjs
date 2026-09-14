@@ -90,6 +90,8 @@ const PATTERNS = [
   /(?:import|export)\s[^;]*?\bfrom\s*(?<q>['"])(?<spec>\.[^'"]*)\k<q>/g, // import x from './y'
   /(^|[;\n}])\s*import\s*(?<q>['"])(?<spec>\.[^'"]+)\k<q>/g, // import './y' (side effect)
   /\bimport\s*\(\s*(?<q>['"])(?<spec>\.[^'"]+)\k<q>\s*\)/g, // import('./y') (dynamic)
+  /\brequire\s*\(\s*(?<q>['"])(?<spec>\.[^'"]+)\k<q>\s*\)/g, // require('./y')
+  /@import\s+(?<q>['"])(?<spec>\.[^'"]+)\k<q>/g, // CSS @import './y'
 ];
 
 function offsetToLine(source, offset) {

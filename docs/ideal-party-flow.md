@@ -109,6 +109,10 @@ optional, remembered next visit. No validation beyond non-empty.
 - The eliminated player's role is revealed with fanfare.
 - Win detection is immediate and correct, including edge cases (parity
   reached by a night kill ends the game that night, not the next day).
+- Ejected seats leave win math so a kicked ghost can't hold the table
+  hostage; merely disconnected seats still count until they rejoin.
+- Night targets exclude offline seats, and mid-game ejection is available
+  from Day and Voting (not just the lobby).
 - Full role reveal, rematch in one tap with group and setup kept.
 
 ### 9. Leaving — the exit

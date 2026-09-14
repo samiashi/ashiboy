@@ -37,8 +37,8 @@ export default function MafiaGame({ params }: GameProps) {
 
   const { view } = session;
   useMafiaSounds(view);
-  // Hold the lock only once play starts — the lobby is idle by design.
-  useWakeLock(view !== null && view.phase !== 'lobby');
+  // Hold the lock only during active play — lobby idles and the podium can rest.
+  useWakeLock(view !== null && view.phase !== 'lobby' && view.phase !== 'gameOver');
 
   if (!view) {
     const profile = loadProfile();
@@ -134,6 +134,7 @@ export default function MafiaGame({ params }: GameProps) {
         phaseLabel={phaseLabel}
         muted={session.muted}
         onToggleMute={session.toggleMute}
+        isHost={view.me.isHost}
       />
       {showDeadBanner && (
         <div className="banner-dead">You were eliminated — you're now spectating.</div>

@@ -107,7 +107,9 @@ name + avatar are remembered from the other games, never asked twice.
 - Wrong verdict with no attempts left → case cold, solution revealed.
 - Disconnect mid-case → seat kept, rejoin restores it; host advancing never
   waits on missing players.
-- Rematch → fresh tokens, cleared searches/presses/verdicts, same players.
+- Rematch → same case, fresh tokens, cleared searches/presses/verdicts, same
+  players, back to the briefing. Back-to-lobby switches cases.
+- Pressure tokens minimum is 1 (zero would soft-lock the alibis phase).
 - Determinism: same seed + same actions = same state (suspect/location
   display order is rng-shuffled at deal time).
 

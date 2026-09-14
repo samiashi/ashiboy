@@ -200,11 +200,11 @@ describe('voting', () => {
     s = run(s, { t: 'advance', id: 'h' });
     s = voteFor(s, 'p1', 'h');
     s = voteFor(s, 'p2', 'h');
-    s = voteFor(s, 'h', 'h'); // self-vote ignored, host still hasn't voted…
-    expect(s.phase).toBe('voting');
-    // …so a valid stand-in: host has no one else to vote for here but the
-    // engine still waits on them rather than stranding the round.
-    expect(s.votes['h']).toBeUndefined();
+    s = run(s, { t: 'vote', id: 'h', seat: s.ballotOrder.indexOf('h') }); // self-vote ignored
+    // Sole author has no legal vote, so the round auto-tallies without them.
+    expect(s.phase).toBe('scoreboard');
+    expect(s.votes).toEqual({});
+    expect(s.history[0].voterCount).toBe(2);
   });
 });
 
@@ -258,7 +258,8 @@ describe('scoreboard and game over', () => {
     s = run(s, { t: 'playAgain', id: 'h' });
     expect(s.phase).toBe('lobby');
     expect(s.players).toHaveLength(3);
-    expect(s.promptOrder).toEqual([]);
+    // promptOrder is kept so the next start() can prefer unused prompts.
+    expect(s.promptOrder).toHaveLength(1);
     expect(s.scores).toEqual({});
     expect(s.history).toEqual([]);
   });
@@ -314,5 +315,23 @@ describe('view privacy', () => {
         expect(JSON.stringify(viewFor(state, p))).not.toContain('tok-');
       }
     }
+  });
+
+  it('drops ghost votes and hides ejected seats from the podium', () => {
+    let s = toVoting(startGame());
+    s = voteFor(s, 'p1', 'p2');
+    s = run(s, { t: 'remove', id: 'h', targetId: 'p1' });
+    s = voteFor(s, 'h', 'p2');
+    s = voteFor(s, 'p2', 'h');
+    expect(s.phase).toBe('scoreboard');
+    expect(s.history[0].voterCount).toBe(2);
+    expect(scoreRows(s).find((r) => r.id === 'p1')).toBeUndefined();
+  });
+
+  it('clears the answer deadline on an empty round', () => {
+    let s = startShort();
+    s = run(s, { t: 'advance', id: 'h' });
+    expect(s.phase).toBe('scoreboard');
+    expect(s.answerEndsAt).toBeUndefined();
   });
 });

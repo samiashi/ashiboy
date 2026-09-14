@@ -71,8 +71,13 @@ function uniqueName(rawName: string, players: Player[]): string {
   const base = rawName.trim().slice(0, 20) || `Player ${players.length + 1}`;
   let name = base;
   let suffix = 2;
+  // Slice the base (not the suffixed name) so the counter is never cut off.
+  // Without this a 20-char base loops forever on duplicates.
+  let guard = 0;
   while (players.some((p) => p.name === name)) {
-    name = `${base} ${suffix++}`.slice(0, 20);
+    const tail = ` ${suffix++}`;
+    name = `${base.slice(0, Math.max(0, 20 - tail.length))}${tail}`;
+    if (++guard > 1000) return `${base.slice(0, 12)}-${Date.now().toString(36)}`;
   }
   return name;
 }
@@ -90,8 +95,14 @@ function shuffle<T>(arr: T[], rng: Rng): T[] {
 }
 
 /** Town wins when no mafia remain; mafia win when they reach parity with the town. */
+/* Ejected seats leave win math so a kicked ghost can't hold the game hostage.
+   Merely disconnected seats still count — they may rejoin, and dropping them
+   would hand the other side an undeserved instant win. */
+function isEjected(p: Player): boolean {
+  return p.token.startsWith('removed-');
+}
 export function checkWin(players: Player[]): 'mafia' | 'town' | undefined {
-  const alive = players.filter((p) => p.alive);
+  const alive = players.filter((p) => p.alive && !isEjected(p));
   const mafia = alive.filter((p) => p.role === 'mafia').length;
   const town = alive.length - mafia;
   if (mafia === 0) return 'town';
@@ -147,11 +158,18 @@ export function reduce(
         mafiaTargets: { ...state.night.mafiaTargets },
       };
       delete night.mafiaTargets[action.id];
-      if (night.detectiveTarget && leaving.role === 'detective') {
+      // Drop picks aimed at the leaver — offline seats can't be night-killed.
+      for (const [actor, target] of Object.entries(night.mafiaTargets)) {
+        if (target === action.id) delete night.mafiaTargets[actor];
+      }
+      if (
+        night.detectiveTarget &&
+        (leaving.role === 'detective' || night.detectiveTarget === action.id)
+      ) {
         // A disconnected detective's pending pick shouldn't linger.
         night.detectiveTarget = undefined;
       }
-      if (night.doctorTarget && leaving.role === 'doctor') {
+      if (night.doctorTarget && (leaving.role === 'doctor' || night.doctorTarget === action.id)) {
         night.doctorTarget = undefined;
       }
       const votes = { ...state.votes };
@@ -171,7 +189,7 @@ export function reduce(
       // revoked so the ejected device can't reclaim it.
       const me = findPlayer(state, action.id);
       const target = findPlayer(state, action.targetId);
-      if (!me?.isHost || !target || target.isHost) return state;
+      if (!me?.isHost || !me.connected || !target || target.isHost) return state;
       if (state.phase === 'lobby') {
         return { ...state, players: state.players.filter((p) => p.id !== target.id) };
       }
@@ -180,6 +198,18 @@ export function reduce(
         mafiaTargets: { ...state.night.mafiaTargets },
       };
       delete night.mafiaTargets[target.id];
+      for (const [actor, picked] of Object.entries(night.mafiaTargets)) {
+        if (picked === target.id) delete night.mafiaTargets[actor];
+      }
+      if (
+        night.detectiveTarget &&
+        (target.role === 'detective' || night.detectiveTarget === target.id)
+      ) {
+        night.detectiveTarget = undefined;
+      }
+      if (night.doctorTarget && (target.role === 'doctor' || night.doctorTarget === target.id)) {
+        night.doctorTarget = undefined;
+      }
       const votes = { ...state.votes };
       delete votes[target.id];
       const next: GameState = {
@@ -195,7 +225,7 @@ export function reduce(
 
     case 'setConfig': {
       const me = findPlayer(state, action.id);
-      if (!me?.isHost || state.phase !== 'lobby') return state;
+      if (!me?.isHost || !me.connected || state.phase !== 'lobby') return state;
       const max = Math.max(1, state.players.length - 2);
       return {
         ...state,
@@ -211,7 +241,7 @@ export function reduce(
 
     case 'start': {
       const me = findPlayer(state, action.id);
-      if (!me?.isHost || state.phase !== 'lobby') return state;
+      if (!me?.isHost || !me.connected || state.phase !== 'lobby') return state;
       const n = state.players.length;
       if (n < MIN_PLAYERS) return state;
 
@@ -328,7 +358,7 @@ export function reduce(
       // Host override for a stalled night (missing actor). Resolves with
       // whatever actions are in — missing actors simply don't act.
       const me = findPlayer(state, action.id);
-      if (!me?.isHost || state.phase !== 'night') return state;
+      if (!me?.isHost || !me.connected || state.phase !== 'night') return state;
       return resolveNight(state, rng);
     }
 
@@ -336,7 +366,7 @@ export function reduce(
       // Host override for a stalled vote. Missing voters are left uncounted,
       // which affects the tally exactly like abstaining.
       const me = findPlayer(state, action.id);
-      if (!me?.isHost || state.phase !== 'voting') return state;
+      if (!me?.isHost || !me.connected || state.phase !== 'voting') return state;
       return resolveVote(state);
     }
 
@@ -356,7 +386,7 @@ export function reduce(
 
     case 'playAgain': {
       const me = findPlayer(state, action.id);
-      if (!me?.isHost || state.phase !== 'gameOver') return state;
+      if (!me?.isHost || !me.connected || state.phase !== 'gameOver') return state;
       // Drop seats that never reconnected — starting with phantom roles helps nobody.
       const players = state.players
         .filter((p) => p.connected)
@@ -542,7 +572,7 @@ export function viewFor(state: GameState, playerId: string): PlayerView {
     if (me.alive) {
       if (me.role === 'mafia') {
         view.nightOptions = state.players
-          .filter((p) => p.alive && p.role !== 'mafia')
+          .filter((p) => p.alive && p.connected && p.role !== 'mafia')
           .map((p) => p.id);
         view.myNightPick = state.night.mafiaTargets[me.id];
         const picks: Record<string, string | undefined> = {};
@@ -551,10 +581,12 @@ export function viewFor(state: GameState, playerId: string): PlayerView {
         }
         view.mafiaPicks = picks;
       } else if (me.role === 'detective') {
-        view.nightOptions = state.players.filter((p) => p.alive && p.id !== me.id).map((p) => p.id);
+        view.nightOptions = state.players
+          .filter((p) => p.alive && p.connected && p.id !== me.id)
+          .map((p) => p.id);
         view.myNightPick = state.night.detectiveTarget;
       } else if (me.role === 'doctor') {
-        view.nightOptions = state.players.filter((p) => p.alive).map((p) => p.id);
+        view.nightOptions = state.players.filter((p) => p.alive && p.connected).map((p) => p.id);
         view.myNightPick = state.night.doctorTarget;
       }
     }

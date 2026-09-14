@@ -70,8 +70,13 @@ function uniqueName(rawName: string, players: Player[]): string {
   const base = rawName.trim().slice(0, 20) || `Player ${players.length + 1}`;
   let name = base;
   let suffix = 2;
+  // Slice the base (not the suffixed name) so the counter is never cut off.
+  // Without this a 20-char base loops forever on duplicates.
+  let guard = 0;
   while (players.some((p) => p.name === name)) {
-    name = `${base} ${suffix++}`.slice(0, 20);
+    const tail = ` ${suffix++}`;
+    name = `${base.slice(0, Math.max(0, 20 - tail.length))}${tail}`;
+    if (++guard > 1000) return `${base.slice(0, 12)}-${Date.now().toString(36)}`;
   }
   return name;
 }
@@ -157,7 +162,7 @@ export function reduce(
     case 'remove': {
       const me = findPlayer(state, action.id);
       const target = findPlayer(state, action.targetId);
-      if (!me?.isHost || !target || target.isHost) return state;
+      if (!me?.isHost || !me.connected || !target || target.isHost) return state;
       if (state.phase === 'lobby') {
         return { ...state, players: state.players.filter((p) => p.id !== target.id) };
       }
@@ -212,7 +217,7 @@ export function reduce(
 
     case 'randomize': {
       const me = findPlayer(state, action.id);
-      if (!me?.isHost || state.phase !== 'lobby') return state;
+      if (!me?.isHost || !me.connected || state.phase !== 'lobby') return state;
       const order = [...state.players];
       for (let i = order.length - 1; i > 0; i--) {
         const j = Math.floor(rng() * (i + 1));
@@ -232,7 +237,7 @@ export function reduce(
 
     case 'setConfig': {
       const me = findPlayer(state, action.id);
-      if (!me?.isHost || state.phase !== 'lobby') return state;
+      if (!me?.isHost || !me.connected || state.phase !== 'lobby') return state;
       return {
         ...state,
         config: {
@@ -243,7 +248,7 @@ export function reduce(
 
     case 'start': {
       const me = findPlayer(state, action.id);
-      if (!me?.isHost || state.phase !== 'lobby') return state;
+      if (!me?.isHost || !me.connected || state.phase !== 'lobby') return state;
       if (state.players.length < MIN_PLAYERS) return state;
       // Every seat must be placed before dealing — matches the lobby blockers.
       if (state.players.some((p) => p.team === null)) return state;
@@ -343,7 +348,7 @@ export function reduce(
 
     case 'extendTurn': {
       const me = findPlayer(state, action.id);
-      if (!me?.isHost) return state;
+      if (!me?.isHost || !me.connected) return state;
       if (
         (state.phase !== 'clue' && state.phase !== 'guessing') ||
         state.turnEndsAt === undefined
@@ -355,8 +360,10 @@ export function reduce(
 
     case 'playAgain': {
       const me = findPlayer(state, action.id);
-      if (!me?.isHost || state.phase !== 'gameOver') return state;
-      const players = state.players.filter((p) => p.connected).map((p) => ({ ...p }));
+      if (!me?.isHost || !me.connected || state.phase !== 'gameOver') return state;
+      // Keep disconnected seats so a late rejoin still finds its chair —
+      // they rejoin with the same token and play the rematch.
+      const players = state.players.map((p) => ({ ...p }));
       // One-tap rematch: same teams, fresh board. Fall back to the lobby when
       // the teams no longer satisfy the start requirements.
       const teamsOk =

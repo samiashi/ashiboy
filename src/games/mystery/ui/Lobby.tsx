@@ -154,7 +154,7 @@ export default function Lobby({ view, roomCode, send }: Props) {
                     config: { ...config, pressureTokens: config.pressureTokens + 1 },
                   })
                 }
-                minusDisabled={config.pressureTokens <= 0}
+                minusDisabled={config.pressureTokens <= 1}
                 plusDisabled={config.pressureTokens >= 6}
               />
             </m.div>

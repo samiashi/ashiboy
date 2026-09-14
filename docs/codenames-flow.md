@@ -139,7 +139,8 @@ needle, orchard, paddle, quartz, ridge, saddle, thunder, velvet, wagon`.
 - Operative taps an already-covered card → ignored.
 - Spymaster submits empty clue word → rejected client-side.
 - Disconnect mid-turn → team continues / host passes; rejoin restores seat + key.
-- Rematch → new board, cleared guesses, same teams, round reset.
+- Rematch → new board, cleared guesses, same teams (disconnected seats kept
+  so a late rejoin still finds its chair), round reset.
 
 ## Limitations inventory
 

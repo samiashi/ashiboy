@@ -132,6 +132,15 @@ export default function Day({ view, send }: Props) {
                 {p.id === view.me.id && <span className="muted"> (you)</span>}
                 {!p.connected && <span className="muted"> (offline)</span>}
               </span>
+              {view.me.isHost && p.id !== view.me.id && (
+                <button
+                  className="btn btn-ghost btn-mini"
+                  aria-label={`Remove ${p.name}`}
+                  onClick={() => send({ t: 'remove', targetId: p.id })}
+                >
+                  Remove
+                </button>
+              )}
             </m.li>
           ))}
         </ul>

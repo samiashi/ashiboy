@@ -36,8 +36,8 @@ export default function MysteryGame({ params }: GameProps) {
 
   const { view } = session;
   useMysterySounds(view);
-  // Hold the lock once the case opens — the lobby is idle by design.
-  useWakeLock(view !== null && view.phase !== 'lobby');
+  // Hold the lock only during active play — lobby idles and the podium can rest.
+  useWakeLock(view !== null && view.phase !== 'lobby' && view.phase !== 'gameOver');
 
   if (!view) {
     const profile = loadProfile();
@@ -127,6 +127,7 @@ export default function MysteryGame({ params }: GameProps) {
         phaseLabel={phaseLabel}
         muted={session.muted}
         onToggleMute={session.toggleMute}
+        isHost={view.me.isHost}
       />
       <Toast message={session.error} onDismiss={session.dismissError} />
       <AnimatePresence initial={false}>

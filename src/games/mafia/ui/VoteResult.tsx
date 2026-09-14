@@ -28,13 +28,22 @@ export default function VoteResult({ view, send }: Props) {
         {result?.eliminatedId ? (
           <p className="death-note">
             <strong>{nameOf(result.eliminatedId)}</strong> was eliminated. They were{' '}
-            <strong className={ROLE_INFO[result.eliminatedRole!].cssClass}>
-              {ROLE_INFO[result.eliminatedRole!].label}
+            <strong className={ROLE_INFO[result.eliminatedRole ?? 'villager'].cssClass}>
+              {ROLE_INFO[result.eliminatedRole ?? 'villager'].label}
             </strong>
             .
           </p>
         ) : (
           <p className="death-note">No majority — nobody was eliminated.</p>
+        )}
+        {view.investigation && (
+          <div className="card investigation">
+            <p className="muted">Your investigation:</p>
+            <p>
+              <strong>{nameOf(view.investigation.targetId)}</strong>{' '}
+              {view.investigation.isMafia ? 'IS a member of the mafia.' : 'is NOT mafia.'}
+            </p>
+          </div>
         )}
         {view.me.isHost ? (
           <m.button

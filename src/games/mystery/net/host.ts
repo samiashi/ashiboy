@@ -60,6 +60,8 @@ export function toAction(playerId: string, msg: ClientMessage): Action | null {
       };
     case 'playAgain':
       return { t: 'playAgain', id: playerId };
+    case 'toLobby':
+      return { t: 'toLobby', id: playerId };
     default:
       return null;
   }
@@ -144,6 +146,13 @@ export class GameHost {
       if (msg.t === 'join') {
         // Rejoin attempt: reclaim an existing seat (verified by secret token).
         if (msg.rejoin) {
+          const targetId = msg.rejoin!.playerId;
+          if (playerId !== undefined && playerId !== targetId) {
+            if (this.conns.get(playerId) === conn) {
+              this.conns.delete(playerId);
+              this.dispatch({ t: 'disconnect', id: playerId });
+            }
+          }
           const seat = this.state.players.find((p) => p.id === msg.rejoin!.playerId);
           if (!seat || seat.token !== msg.rejoin.token) {
             conn.send({ t: 'error', message: 'rejoin-failed' } satisfies HostMessage);
@@ -170,6 +179,8 @@ export class GameHost {
           } satisfies HostMessage);
           return;
         }
+        // One socket = one seat — ignore a second fresh join on the same conn.
+        if (playerId !== undefined) return;
         playerId = randomId();
         const token = randomToken();
         this.conns.set(playerId, conn);
@@ -218,11 +229,24 @@ export class GameHost {
   private publish(): void {
     for (const p of this.state.players) {
       if (!p.connected) continue;
-      const view = viewFor(this.state, p.id);
+      let view: PlayerView;
+      try {
+        view = viewFor(this.state, p.id);
+      } catch {
+        continue;
+      }
       if (p.id === this.hostId) {
-        this.onView(view);
+        try {
+          this.onView(view);
+        } catch {
+          /* host view handler must never break the broadcast */
+        }
       } else {
-        this.conns.get(p.id)?.send({ t: 'state', view } satisfies HostMessage);
+        try {
+          this.conns.get(p.id)?.send({ t: 'state', view } satisfies HostMessage);
+        } catch {
+          /* one dead guest must not strand the rest of the table */
+        }
       }
     }
   }

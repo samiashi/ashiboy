@@ -20,13 +20,18 @@ export function CountdownRing({ endsAt, totalSeconds, size = 128, onExpire, onTi
   const [now, setNow] = useState(() => Date.now());
   const fired = useRef(false);
   const lastTick = useRef(Number.POSITIVE_INFINITY);
+  // Host extensions (+1:00) can push remaining past the original total.
+  // Remember the largest total seen for this deadline so the ring drains
+  // from full instead of sitting motionless while remaining > total.
+  const maxTotalRef = useRef(Math.max(1, totalSeconds * 1000));
 
   // A new deadline is a new countdown — allow expiry/ticks to fire again.
   // Without this, only the first timed turn ever auto-passes per mount.
   useEffect(() => {
     fired.current = false;
     lastTick.current = Number.POSITIVE_INFINITY;
-  }, [endsAt]);
+    maxTotalRef.current = Math.max(1, totalSeconds * 1000, endsAt - Date.now());
+  }, [endsAt, totalSeconds]);
 
   useEffect(() => {
     // 500ms is plenty for a per-second display + 1s host enforcement, and
@@ -62,8 +67,12 @@ export function CountdownRing({ endsAt, totalSeconds, size = 128, onExpire, onTi
     }
   }, [remainingSec, onTick]);
 
+  useEffect(() => {
+    if (remainingMs > maxTotalRef.current) maxTotalRef.current = remainingMs;
+  }, [remainingMs]);
+
   const { fraction, circumference, label, timeSize } = useMemo(() => {
-    const totalMs = Math.max(1, totalSeconds * 1000);
+    const totalMs = Math.max(1, maxTotalRef.current, totalSeconds * 1000);
     const radius = size / 2 - 8;
     return {
       fraction: Math.min(1, remainingMs / totalMs),

@@ -93,14 +93,18 @@ name + avatar are remembered from the other games, never asked twice.
 - Host closes answering with zero non-blank answers → empty result recorded,
   scoreboard shows "no answers", game continues.
 - Self-vote → ignored, vote unchanged.
+- Single-entry ballot → sole author has no legal vote, so the round
+  auto-tallies once everyone else has voted (never stalls).
 - Vote for an out-of-range ballot seat → ignored.
 - Vote overwrite → last tap wins.
 - Disconnect mid-answer → seat kept, answer (if any) stays in play, rejoin
   restores it; connected-only quorums never wait on the missing.
-- Removed seat's answers → excluded from the ballot.
+- Removed seat's answers → excluded from the ballot; their votes are dropped
+  and they leave the podium (old points kept in state but hidden).
 - Last prompt's scoreboard advances to gameOver, not another answering round.
 - Score tie → all top scorers crowned.
-- Rematch → fresh prompts, cleared answers/votes/scores, same players.
+- Rematch → fresh prompts (unused prompts preferred when the pool allows),
+  cleared answers/votes/scores, same players.
 - Determinism: same seed + same actions = same state (prompt order and
   ballot order are rng-shuffled at deal time).
 

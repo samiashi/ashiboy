@@ -26,7 +26,7 @@ function NightSky() {
 
 export default function Night({ view, send }: Props) {
   const nameOf = (id?: string) => view.players.find((p) => p.id === id)?.name ?? '—';
-  const role = view.me.role!;
+  const role = view.me.role ?? 'villager';
 
   if (!view.me.alive) {
     return (

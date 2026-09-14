@@ -40,7 +40,9 @@ describe('Hot Take Answering', () => {
   it('shows lock-in state and the waiting count', () => {
     render(<Answering view={answeringView('a', 'Pebbleina')} send={vi.fn()} />);
     expect(screen.getByRole('button', { name: 'Update answer' })).toBeTruthy();
-    expect(screen.getByText('Locked in — you can still edit until voting opens.')).toBeTruthy();
+    expect(
+      screen.getByText('Locked in — you can still edit or retract until voting opens.'),
+    ).toBeTruthy();
   });
 
   it('lets the host close answers early', async () => {

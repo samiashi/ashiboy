@@ -116,14 +116,24 @@ export default function GameOver({ view, send }: Props) {
           ))}
         </ul>
         {view.me.isHost ? (
-          <m.button
-            className="btn btn-primary"
-            onClick={() => send({ t: 'playAgain' })}
-            variants={popIn}
-            whileTap={{ scale: 0.97 }}
-          >
-            Open a new case
-          </m.button>
+          <>
+            <m.button
+              className="btn btn-primary"
+              onClick={() => send({ t: 'playAgain' })}
+              variants={popIn}
+              whileTap={{ scale: 0.97 }}
+            >
+              Rematch — same case
+            </m.button>
+            <m.button
+              className="btn btn-ghost"
+              onClick={() => send({ t: 'toLobby' })}
+              variants={fadeUp}
+              whileTap={{ scale: 0.97 }}
+            >
+              Back to lobby
+            </m.button>
+          </>
         ) : (
           <m.p className="muted center" variants={fadeUp}>
             Waiting for {hostName} to open a new case…

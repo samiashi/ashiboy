@@ -657,4 +657,47 @@ describe('audit fixes', () => {
     s = reduce(s, { t: 'extendDiscussion', id: 'p0' }, rng, NOW + 600_000);
     expect(s.discussionEndsAt).toBe(NOW + 660_000);
   });
+
+  it('dedupes 20-char names without hanging', () => {
+    const long = '12345678901234567890';
+    let s = createLobby('p0', long, '🦊', 'tok0');
+    s = run(s, { t: 'join', id: 'p1', name: long, avatar: '🐼', token: 'tok1' });
+    s = run(s, { t: 'join', id: 'p2', name: long, avatar: '🐼', token: 'tok2' });
+    const names = s.players.map((p) => p.name);
+    expect(new Set(names).size).toBe(3);
+    expect(names.every((n) => n.length <= 20)).toBe(true);
+  });
+
+  it('ejecting the doctor drops their pending save', () => {
+    let s = makeGame(['A', 'B', 'C', 'D', 'E'], {
+      mafiaCount: 1,
+      hasDetective: false,
+      hasDoctor: true,
+    });
+    s = everyoneReady(s);
+    const doctor = byRole(s, 'doctor')[0];
+    const mafia = byRole(s, 'mafia')[0];
+    const victim = s.players.find((p) => p.id !== mafia && p.id !== doctor)!.id;
+    s = run(s, { t: 'nightAct', id: doctor, targetId: victim });
+    s = run(s, { t: 'remove', id: 'p0', targetId: doctor });
+    expect(s.night.doctorTarget).toBeUndefined();
+  });
+
+  it('night options exclude offline seats and ejected seats leave win math', () => {
+    let s = makeGame(['A', 'B', 'C', 'D'], {
+      mafiaCount: 1,
+      hasDetective: false,
+      hasDoctor: false,
+    });
+    s = everyoneReady(s);
+    const [mafia] = byRole(s, 'mafia');
+    const target = byRole(s, 'villager')[0];
+    s = run(s, { t: 'disconnect', id: target });
+    expect(viewFor(s, mafia).nightOptions).not.toContain(target);
+    // Ejected seats leave win math even though disconnected seats still count.
+    const ejected = s.players.map((p) =>
+      p.id === mafia ? { ...p, connected: false, token: `removed-${p.id}` } : p,
+    );
+    expect(checkWin(ejected)).toBe('town');
+  });
 });

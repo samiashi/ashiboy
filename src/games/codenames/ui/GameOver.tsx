@@ -17,9 +17,25 @@ function teamLabel(team: Team): string {
 }
 
 export default function GameOver({ view, send }: Props) {
-  const winner = view.winner ?? 'red';
+  const winner = view.winner;
   const hostName = view.players.find((p) => p.isHost)?.name ?? 'the host';
   const assassinHit = (view.cards ?? []).some((c) => c.kind === 'assassin' && c.revealed);
+
+  if (!winner) {
+    return (
+      <div className="app">
+        <div className="card center">
+          <h1 className="title-sm">Game over</h1>
+          <p className="muted">The result didn&apos;t come through — ask the host to deal again.</p>
+          {view.me.isHost && (
+            <button className="btn btn-primary" onClick={() => send({ t: 'playAgain' })}>
+              Rematch — same teams
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="app">

@@ -416,4 +416,14 @@ describe('audit fixes', () => {
     s = run(s, { t: 'rejoin', id: 'p1', token: 'tok1' });
     expect(s.players.find((p) => p.id === 'p1')?.connected).toBe(false);
   });
+
+  it('dedupes 20-char names without hanging', () => {
+    const long = '12345678901234567890';
+    let s = createLobby('h', long, AVATAR, 'tok-h');
+    s = run(s, { t: 'join', id: 'p1', name: long, avatar: AVATAR, token: 'tok1' });
+    s = run(s, { t: 'join', id: 'p2', name: long, avatar: AVATAR, token: 'tok2' });
+    const names = s.players.map((p) => p.name);
+    expect(new Set(names).size).toBe(3);
+    expect(names.every((n) => n.length <= 20)).toBe(true);
+  });
 });

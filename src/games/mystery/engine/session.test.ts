@@ -88,14 +88,15 @@ describe('full table night (The Final Curtain)', () => {
     expect(s.winner).toBe('solved');
     expect(s.stars).toBe(2);
 
-    // Game over: every seat sees the same named truth, then a clean rematch.
+    // Game over: every seat sees the same named truth, then a same-case rematch.
     const truth = viewFor(s, 'p2');
     expect(truth.solution).toEqual({ suspectId: 'petra', weaponId: 'tonic', locationId: 'stage' });
     s = run(s, { t: 'playAgain', id: 'h' });
-    expect(s.phase).toBe('lobby');
+    expect(s.phase).toBe('briefing');
+    expect(s.caseId).toBe('curtain');
     expect(s.players).toHaveLength(4);
     expect(s.cluesFound).toEqual([]);
-    expect(s.solution).toBeNull();
+    expect(s.solution).not.toBeNull();
   });
 
   it('opens every case in the picker', () => {

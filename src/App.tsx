@@ -47,19 +47,21 @@ export default function App() {
   }, []);
 
   const { path, params } = parseHash();
-  const game = games.find((g) => g.slug === path);
-  const joinCode = params.get('join') ?? '';
-  const isKnownRoute = path === '/' || game !== undefined;
+  // Tolerate trailing slashes from hand-typed/pasted links: #/mafia/ === #/mafia.
+  const normalizedPath = path.length > 1 ? path.replace(/\/+$/, '') : path;
+  const game = games.find((g) => g.slug === normalizedPath);
+  const isKnownRoute = normalizedPath === '/' || game !== undefined;
 
   // Hash routes don't move the viewport — always restart at the top,
   // e.g. returning to the hub from deep inside a game.
   useEffect(() => {
     window.scrollTo(0, 0);
-  }, [path]);
+  }, [normalizedPath]);
 
-  // Key on the invite code too so pasting a second invite while already on
-  // the game page remounts the join form with the new code.
-  const swapKey = game ? `${game.slug}?join=${joinCode}` : path;
+  // Key on the game only — NOT on ?join=. GameHome already syncs a pasted
+  // second invite into the form via useEffect, so remounting here would only
+  // destroy a live host room when the host pastes another link in the same tab.
+  const swapKey = game ? game.slug : normalizedPath;
 
   return (
     // No mode="wait" — enter/exit run in parallel so route changes never pay

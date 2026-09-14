@@ -76,6 +76,7 @@ export function useGameSession<View, Msg>(
   const [muted, setMutedState] = useState(options.readMuted());
   const sessionRef = useRef<SessionHandle<Msg> | null>(null);
   const connectTimer = useRef<number | undefined>(undefined);
+  const connectingRef = useRef(false);
   const optsRef = useRef(options);
   optsRef.current = options;
 
@@ -92,19 +93,21 @@ export function useGameSession<View, Msg>(
   const clearConnectTimer = useCallback(() => {
     window.clearTimeout(connectTimer.current);
     connectTimer.current = undefined;
+    connectingRef.current = false;
   }, []);
 
   const armConnectTimer = useCallback(() => {
     window.clearTimeout(connectTimer.current);
+    connectingRef.current = true;
     // PeerJS only resolves via view/error. If signaling is unreachable
     // (offline LAN), neither fires — escape the stuck "Connecting…" state.
+    // (No setState inside an updater — updaters must stay pure.)
     connectTimer.current = window.setTimeout(() => {
-      setConnecting((c) => {
-        if (c) {
-          setError('Connection timed out — check the code and your connection, then try again.');
-        }
-        return false;
-      });
+      if (connectingRef.current) {
+        connectingRef.current = false;
+        setConnecting(false);
+        setError('Connection timed out — check the code and your connection, then try again.');
+      }
     }, 15000);
   }, []);
 

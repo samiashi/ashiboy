@@ -26,7 +26,13 @@ const DISCUSSION_PRESETS = [
 export default function Lobby({ view, roomCode, send }: Props) {
   const isHost = view.me.isHost;
   const n = view.players.length;
-  const config = view.config!;
+  const config = view.config ?? {
+    mafiaCount: 1,
+    hasDetective: true,
+    hasDoctor: true,
+    discussionSeconds: 180,
+    skipFirstVote: true,
+  };
   const maxMafia = Math.max(1, n - 2);
   const mafia = Math.min(config.mafiaCount, maxMafia);
   const town = n - mafia;

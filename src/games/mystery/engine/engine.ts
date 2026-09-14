@@ -28,7 +28,7 @@ function clampConfig(raw: GameConfig): GameConfig {
   const d = suggestConfig();
   return {
     searchTokens: clampInt(raw.searchTokens, 1, 12, d.searchTokens),
-    pressureTokens: clampInt(raw.pressureTokens, 0, 6, d.pressureTokens),
+    pressureTokens: clampInt(raw.pressureTokens, 1, 6, d.pressureTokens),
     accusationAttempts: clampInt(raw.accusationAttempts, 1, 3, d.accusationAttempts),
     searchSeconds: clampInt(raw.searchSeconds, 0, 600, d.searchSeconds),
   };
@@ -80,8 +80,13 @@ function uniqueName(rawName: string, players: Player[]): string {
   const base = rawName.trim().slice(0, 20) || `Player ${players.length + 1}`;
   let name = base;
   let suffix = 2;
+  // Slice the base (not the suffixed name) so the counter is never cut off.
+  // Without this a 20-char base loops forever on duplicates.
+  let guard = 0;
   while (players.some((p) => p.name === name)) {
-    name = `${base} ${suffix++}`.slice(0, 20);
+    const tail = ` ${suffix++}`;
+    name = `${base.slice(0, Math.max(0, 20 - tail.length))}${tail}`;
+    if (++guard > 1000) return `${base.slice(0, 12)}-${Date.now().toString(36)}`;
   }
   return name;
 }
@@ -147,7 +152,7 @@ export function reduce(
     case 'remove': {
       const me = findPlayer(state, action.id);
       const target = findPlayer(state, action.targetId);
-      if (!me?.isHost || !target || target.isHost) return state;
+      if (!me?.isHost || !me.connected || !target || target.isHost) return state;
       if (state.phase === 'lobby') {
         return { ...state, players: state.players.filter((p) => p.id !== target.id) };
       }
@@ -175,13 +180,13 @@ export function reduce(
 
     case 'setConfig': {
       const me = findPlayer(state, action.id);
-      if (!me?.isHost || state.phase !== 'lobby') return state;
+      if (!me?.isHost || !me.connected || state.phase !== 'lobby') return state;
       return { ...state, config: clampConfig(action.config) };
     }
 
     case 'start': {
       const me = findPlayer(state, action.id);
-      if (!me?.isHost || state.phase !== 'lobby') return state;
+      if (!me?.isHost || !me.connected || state.phase !== 'lobby') return state;
       if (state.players.length < MIN_PLAYERS) return state;
       const c = getCase(action.caseId);
       if (!c) return state;
@@ -213,7 +218,7 @@ export function reduce(
 
     case 'advance': {
       const me = findPlayer(state, action.id);
-      if (!me?.isHost) return state;
+      if (!me?.isHost || !me.connected) return state;
       if (state.phase === 'briefing') {
         return {
           ...state,
@@ -222,8 +227,9 @@ export function reduce(
             state.config.searchSeconds > 0 ? now + state.config.searchSeconds * 1000 : undefined,
         };
       }
-      if (state.phase === 'search') return { ...state, phase: 'alibis' };
-      if (state.phase === 'alibis') return { ...state, phase: 'accusation' };
+      if (state.phase === 'search') return { ...state, phase: 'alibis', searchEndsAt: undefined };
+      if (state.phase === 'alibis')
+        return { ...state, phase: 'accusation', searchEndsAt: undefined };
       return state;
     }
 
@@ -249,7 +255,9 @@ export function reduce(
       };
       const exhausted = next.searchLeft <= 0;
       const everythingSearched = c.locations.every((l) => next.locationsSearched.includes(l.id));
-      return exhausted || everythingSearched ? { ...next, phase: 'alibis' } : next;
+      return exhausted || everythingSearched
+        ? { ...next, phase: 'alibis', searchEndsAt: undefined }
+        : next;
     }
 
     case 'press': {
@@ -313,7 +321,58 @@ export function reduce(
 
     case 'playAgain': {
       const me = findPlayer(state, action.id);
-      if (!me?.isHost || state.phase !== 'gameOver') return state;
+      if (!me?.isHost || !me.connected || state.phase !== 'gameOver') return state;
+      // One-tap rematch: same case, fresh tokens, back to the briefing.
+      // Use "Back to lobby" (toLobby) to switch cases.
+      const c = state.caseId ? getCase(state.caseId) : undefined;
+      if (!c) {
+        return {
+          ...state,
+          phase: 'lobby',
+          caseId: null,
+          solution: null,
+          suspectOrder: [],
+          locationOrder: [],
+          locationsSearched: [],
+          cluesFound: [],
+          secretsRevealed: [],
+          searchLeft: 0,
+          pressureLeft: 0,
+          attemptsLeft: 0,
+          attempts: [],
+          winner: undefined,
+          stars: undefined,
+          searchEndsAt: undefined,
+        };
+      }
+      return {
+        ...state,
+        phase: 'briefing',
+        solution: { ...c.solution },
+        suspectOrder: shuffled(
+          c.suspects.map((s) => s.id),
+          rng,
+        ),
+        locationOrder: shuffled(
+          c.locations.map((l) => l.id),
+          rng,
+        ),
+        locationsSearched: [],
+        cluesFound: [],
+        secretsRevealed: [],
+        searchLeft: state.config.searchTokens,
+        pressureLeft: state.config.pressureTokens,
+        attemptsLeft: state.config.accusationAttempts,
+        attempts: [],
+        winner: undefined,
+        stars: undefined,
+        searchEndsAt: undefined,
+      };
+    }
+
+    case 'toLobby': {
+      const me = findPlayer(state, action.id);
+      if (!me?.isHost || !me.connected || state.phase !== 'gameOver') return state;
       return {
         ...state,
         phase: 'lobby',

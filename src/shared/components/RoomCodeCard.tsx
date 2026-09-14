@@ -15,14 +15,35 @@ interface Props {
 /** Room code display with QR invite and copy-to-clipboard. Self-contained. */
 export function RoomCodeCard({ roomCode, inviteLink }: Props) {
   const [copied, setCopied] = useState(false);
+  const [copyFailed, setCopyFailed] = useState(false);
 
   const copyLink = async () => {
+    setCopyFailed(false);
     try {
       await navigator.clipboard.writeText(inviteLink);
       setCopied(true);
       window.setTimeout(() => setCopied(false), 1600);
+      return;
     } catch {
-      // clipboard unavailable (non-secure context) — the code is visible anyway
+      // Fall through to the legacy path (plain-LAN HTTP has no clipboard).
+    }
+    try {
+      const ta = document.createElement('textarea');
+      ta.value = inviteLink;
+      ta.setAttribute('readonly', '');
+      ta.style.position = 'absolute';
+      ta.style.left = '-9999px';
+      document.body.appendChild(ta);
+      ta.select();
+      const ok = document.execCommand('copy');
+      document.body.removeChild(ta);
+      if (!ok) throw new Error('copy failed');
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1600);
+    } catch {
+      // Non-secure context with no fallback — the code stays visible for typing.
+      setCopyFailed(true);
+      window.setTimeout(() => setCopyFailed(false), 3000);
     }
   };
 
@@ -46,6 +67,11 @@ export function RoomCodeCard({ roomCode, inviteLink }: Props) {
       <button className="btn btn-ghost" onClick={copyLink}>
         {copied ? 'Copied to clipboard!' : 'Copy invite link'}
       </button>
+      {copyFailed && (
+        <p className="muted center" role="alert">
+          Copy isn&apos;t available on this connection — type the 6-letter code instead.
+        </p>
+      )}
       <span className="sr-only" role="status" aria-live="polite">
         {copied ? 'Invite link copied to clipboard' : ''}
       </span>

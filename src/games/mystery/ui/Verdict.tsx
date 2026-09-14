@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { m } from 'motion/react';
 import { ClientMessage, PlayerView } from '@/games/mystery/engine/types';
 import { fadeUp, staggerParent } from '@/anim';
@@ -21,6 +21,17 @@ export default function Verdict({ view, send }: Props) {
   const [suspectId, setSuspectId] = useState(suspects[0]?.id ?? '');
   const [weaponId, setWeaponId] = useState(weapons[0]?.id ?? '');
   const [locationId, setLocationId] = useState(locations[0]?.id ?? '');
+  // Lists can arrive after first render (delayed view) — adopt the first
+  // option once loaded instead of stranding the form on ''.
+  useEffect(() => {
+    if (suspectId === '' && suspects.length > 0) setSuspectId(suspects[0].id);
+  }, [suspects, suspectId]);
+  useEffect(() => {
+    if (weaponId === '' && weapons.length > 0) setWeaponId(weapons[0].id);
+  }, [weapons, weaponId]);
+  useEffect(() => {
+    if (locationId === '' && locations.length > 0) setLocationId(locations[0].id);
+  }, [locations, locationId]);
   const attemptsLeft = view.attemptsLeft ?? 0;
   const ready = suspectId !== '' && weaponId !== '' && locationId !== '' && attemptsLeft > 0;
 

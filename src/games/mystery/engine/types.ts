@@ -128,7 +128,8 @@ export type Action =
   | { t: 'press'; id: string; suspectId: string }
   | { t: 'advance'; id: string }
   | { t: 'accuse'; id: string; suspectId: string; weaponId: string; locationId: string }
-  | { t: 'playAgain'; id: string };
+  | { t: 'playAgain'; id: string }
+  | { t: 'toLobby'; id: string };
 
 // ---------- wire protocol (for the future net/ layer; same session shape) ----------
 
@@ -142,7 +143,8 @@ export type ClientMessage =
   | { t: 'press'; suspectId: string }
   | { t: 'advance' }
   | { t: 'accuse'; suspectId: string; weaponId: string; locationId: string }
-  | { t: 'playAgain' };
+  | { t: 'playAgain' }
+  | { t: 'toLobby' };
 
 export type HostMessage =
   | { t: 'welcome'; playerId: string; token: string }

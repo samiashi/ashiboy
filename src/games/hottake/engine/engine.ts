@@ -79,8 +79,13 @@ function uniqueName(rawName: string, players: Player[]): string {
   const base = rawName.trim().slice(0, 20) || `Player ${players.length + 1}`;
   let name = base;
   let suffix = 2;
+  // Slice the base (not the suffixed name) so the counter is never cut off.
+  // Without this a 20-char base loops forever on duplicates.
+  let guard = 0;
   while (players.some((p) => p.name === name)) {
-    name = `${base} ${suffix++}`.slice(0, 20);
+    const tail = ` ${suffix++}`;
+    name = `${base.slice(0, Math.max(0, 20 - tail.length))}${tail}`;
+    if (++guard > 1000) return `${base.slice(0, 12)}-${Date.now().toString(36)}`;
   }
   return name;
 }
@@ -142,7 +147,15 @@ function closeAnswering(state: GameState, rng: Rng, now: number): GameState {
         voterCount: 0,
       },
     ];
-    return { ...state, phase: 'scoreboard', ballotOrder, answers: {}, votes: {}, history };
+    return {
+      ...state,
+      phase: 'scoreboard',
+      ballotOrder,
+      answers: {},
+      votes: {},
+      history,
+      answerEndsAt: undefined,
+    };
   }
   return {
     ...state,
@@ -157,10 +170,17 @@ function closeAnswering(state: GameState, rng: Rng, now: number): GameState {
 /** Tallies the ballot at 100 points a vote and reveals the round. */
 function tallyAndScoreboard(state: GameState): GameState {
   const counts = new Map<string, number>();
+  let validVotes = 0;
   for (const [voterId, seat] of Object.entries(state.votes)) {
+    const voter = findPlayer(state, voterId);
+    // Ghost votes from ejected/offline seats must not score.
+    if (!voter || !voter.connected || isGone(voter)) continue;
     const authorId = state.ballotOrder[seat];
     if (!authorId || authorId === voterId) continue; // defensive; vote() already guards
+    const author = findPlayer(state, authorId);
+    if (!author || isGone(author)) continue;
     counts.set(authorId, (counts.get(authorId) ?? 0) + 1);
+    validVotes++;
   }
   const scores = { ...state.scores };
   for (const [authorId, count] of counts) {
@@ -181,7 +201,7 @@ function tallyAndScoreboard(state: GameState): GameState {
           votes: counts.get(authorId) ?? 0,
         };
       }),
-      voterCount: Object.keys(state.votes).length,
+      voterCount: validVotes,
     },
   ];
   return {
@@ -196,8 +216,10 @@ function tallyAndScoreboard(state: GameState): GameState {
 }
 
 /** Running totals, highest first (name breaks ties deterministically). */
+/* Ejected seats leave the podium — their old points stay in state but are hidden. */
 export function scoreRows(state: GameState): ScoreRow[] {
   return state.players
+    .filter((p) => !isGone(p))
     .map((p) => ({ id: p.id, name: p.name, score: state.scores[p.id] ?? 0 }))
     .sort((a, b) => b.score - a.score || a.name.localeCompare(b.name));
 }
@@ -210,8 +232,10 @@ function everyoneAnswered(state: GameState): boolean {
 }
 
 function everyoneVoted(state: GameState): boolean {
-  const connected = state.players.filter((p) => p.connected);
-  return connected.length > 0 && connected.every((p) => state.votes[p.id] !== undefined);
+  const connected = state.players.filter((p) => p.connected && !isGone(p));
+  // A player with no legal vote (sole author of a 1-entry ballot) can't stall.
+  const required = connected.filter((p) => state.ballotOrder.some((a) => a !== p.id));
+  return required.every((p) => state.votes[p.id] !== undefined);
 }
 
 /**
@@ -250,17 +274,28 @@ export function reduce(
     case 'remove': {
       const me = findPlayer(state, action.id);
       const target = findPlayer(state, action.targetId);
-      if (!me?.isHost || !target || target.isHost) return state;
+      if (!me?.isHost || !me.connected || !target || target.isHost) return state;
       if (state.phase === 'lobby') {
         return { ...state, players: state.players.filter((p) => p.id !== target.id) };
       }
       // Mid-game ejection revokes the token so the seat can't be reclaimed.
-      return {
+      // Drop their answer + vote so a ghost can't score or stall.
+      const answers = { ...state.answers };
+      delete answers[target.id];
+      const votes = { ...state.votes };
+      delete votes[target.id];
+      const ballotOrder = state.ballotOrder.filter((id) => id !== target.id);
+      const next: GameState = {
         ...state,
+        answers,
+        votes,
+        ballotOrder,
         players: state.players.map((p) =>
           p.id === target.id ? { ...p, connected: false, token: `removed-${p.id}` } : p,
         ),
       };
+      if (next.phase === 'voting' && everyoneVoted(next)) return tallyAndScoreboard(next);
+      return next;
     }
 
     case 'disconnect': {
@@ -270,23 +305,33 @@ export function reduce(
         if (leaving.isHost) return state;
         return { ...state, players: state.players.filter((p) => p.id !== action.id) };
       }
-      return {
+      const votes = { ...state.votes };
+      delete votes[action.id];
+      const next: GameState = {
         ...state,
+        votes,
         players: state.players.map((p) => (p.id === action.id ? { ...p, connected: false } : p)),
       };
+      if (next.phase === 'voting' && everyoneVoted(next)) return tallyAndScoreboard(next);
+      return next;
     }
 
     case 'setConfig': {
       const me = findPlayer(state, action.id);
-      if (!me?.isHost || state.phase !== 'lobby') return state;
+      if (!me?.isHost || !me.connected || state.phase !== 'lobby') return state;
       return { ...state, config: clampConfig(action.config) };
     }
 
     case 'start': {
       const me = findPlayer(state, action.id);
-      if (!me?.isHost || state.phase !== 'lobby') return state;
+      if (!me?.isHost || !me.connected || state.phase !== 'lobby') return state;
       if (state.players.length < MIN_PLAYERS) return state;
-      const promptOrder = shuffled(allPromptIds(), rng).slice(0, state.config.promptsPerGame);
+      // Prefer prompts not used in the previous game (kept in promptOrder
+      // through playAgain) so "fresh prompts" holds when the pool allows it.
+      const previous = new Set(state.promptOrder);
+      const fresh = allPromptIds().filter((id) => !previous.has(id));
+      const pool = fresh.length >= state.config.promptsPerGame ? fresh : allPromptIds();
+      const promptOrder = shuffled(pool, rng).slice(0, state.config.promptsPerGame);
       const scores: Record<string, number> = {};
       for (const p of state.players) scores[p.id] = 0;
       return openAnswering(
@@ -327,7 +372,7 @@ export function reduce(
 
     case 'advance': {
       const me = findPlayer(state, action.id);
-      if (!me?.isHost) return state;
+      if (!me?.isHost || !me.connected) return state;
       if (state.phase === 'answering') return closeAnswering(state, rng, now);
       if (state.phase === 'voting') return tallyAndScoreboard(state);
       if (state.phase === 'scoreboard') {
@@ -347,11 +392,11 @@ export function reduce(
 
     case 'playAgain': {
       const me = findPlayer(state, action.id);
-      if (!me?.isHost || state.phase !== 'gameOver') return state;
+      if (!me?.isHost || !me.connected || state.phase !== 'gameOver') return state;
       return {
         ...state,
         phase: 'lobby',
-        promptOrder: [],
+        // Keep promptOrder so the next start() can prefer unused prompts.
         promptIndex: 0,
         ballotOrder: [],
         answers: {},

@@ -5,13 +5,20 @@ interface Props {
   phaseLabel?: string;
   muted: boolean;
   onToggleMute(): void;
+  /** When false, leaving only frees your seat — the room lives on. */
+  isHost?: boolean;
 }
 
 /** Site chrome above every game: home link, current phase, mute toggle. */
-export function TopBar({ title, phaseLabel = '', muted, onToggleMute }: Props) {
+export function TopBar({ title, phaseLabel = '', muted, onToggleMute, isHost }: Props) {
   const confirmLeave = (e: React.MouseEvent<HTMLAnchorElement>) => {
     // The host's tab is the room — leaving ends the game for everyone.
-    if (!window.confirm('Leave the game? The room ends for everyone if you host it.')) {
+    // Guests just free their seat (rejoinable via their ticket).
+    const message =
+      isHost === false
+        ? 'Leave the game? You can rejoin from the home screen.'
+        : 'Leave the game? The room ends for everyone if you host it.';
+    if (!window.confirm(message)) {
       e.preventDefault();
     }
   };

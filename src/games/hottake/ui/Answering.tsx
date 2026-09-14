@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { m } from 'motion/react';
 import { MAX_ANSWER } from '@/games/hottake/engine/engine';
 import { ClientMessage, PlayerView } from '@/games/hottake/engine/types';
@@ -14,10 +14,16 @@ interface Props {
 /** Everyone writes one answer to the shared prompt. Texts stay sealed. */
 export default function Answering({ view, send }: Props) {
   const [draft, setDraft] = useState(view.myText ?? '');
+  // Sync host-echoed changes (rejoin restore, take-back from another tab).
+  useEffect(() => {
+    setDraft(view.myText ?? '');
+  }, [view.myText]);
   const clean = draft.trim();
   const submitted = (view.myText ?? '').length > 0;
   const connected = view.players.filter((p) => p.connected);
-  const waiting = connected.filter((p) => !(view.submittedIds ?? []).includes(p.id)).length;
+  const waitingOthers = connected.filter(
+    (p) => p.id !== view.me.id && !(view.submittedIds ?? []).includes(p.id),
+  ).length;
   // Stable identities so CountdownRing effects don't resubscribe every render.
   const handleExpire = useCallback(() => playSound('time'), []);
   const handleTick = useCallback(() => playSound('tick'), []);
@@ -55,19 +61,23 @@ export default function Answering({ view, send }: Props) {
         </m.div>
         <m.button
           className="btn btn-primary"
-          disabled={clean.length === 0}
+          disabled={clean.length === 0 && !submitted}
           onClick={() => send({ t: 'answer', text: clean })}
           variants={fadeUp}
           whileTap={{ scale: 0.97 }}
         >
-          {submitted ? 'Update answer' : 'Submit answer'}
+          {clean.length === 0 && submitted
+            ? 'Retract answer'
+            : submitted
+              ? 'Update answer'
+              : 'Submit answer'}
         </m.button>
         <m.p className="muted center" variants={fadeUp}>
           {submitted
-            ? 'Locked in — you can still edit until voting opens.'
-            : waiting <= 1
+            ? 'Locked in — you can still edit or retract until voting opens.'
+            : waitingOthers <= 0
               ? 'Waiting on the last writer…'
-              : `Waiting on ${waiting} writers…`}
+              : `Waiting on ${waitingOthers} other writer${waitingOthers === 1 ? '' : 's'}…`}
         </m.p>
         {view.me.isHost && (
           <m.button
