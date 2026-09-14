@@ -16,9 +16,16 @@ export default function Alibis({ view, send }: Props) {
     <div className="app">
       <m.div className="token-bar" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
         <span className="token-label">Pressure</span>
-        <span className="token-count" aria-label={`${pressure} pressure left`}>
+        <m.span
+          key={pressure}
+          className="token-count"
+          aria-label={`${pressure} pressure left`}
+          initial={{ scale: 0.5 }}
+          animate={{ scale: 1 }}
+          transition={{ type: 'spring', stiffness: 420, damping: 18 }}
+        >
           {'❗'.repeat(Math.max(0, pressure)) || '—'}
-        </span>
+        </m.span>
       </m.div>
 
       <m.div className="card" variants={staggerParent} initial="hidden" animate="show">
@@ -39,7 +46,14 @@ export default function Alibis({ view, send }: Props) {
                 <em>“{s.alibi}”</em>
               </p>
               {s.secretRevealed ? (
-                <p className="secret-reveal">💥 {s.secret}</p>
+                <m.p
+                  className="secret-reveal"
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  transition={{ duration: 0.3, ease: 'easeOut' }}
+                >
+                  💥 {s.secret}
+                </m.p>
               ) : (
                 <button
                   className="btn btn-ghost btn-small"

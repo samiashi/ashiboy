@@ -85,10 +85,21 @@ export default function Verdict({ view, send }: Props) {
           </m.h2>
           <div className="clue-list">
             {(view.attempts ?? []).map((a, i) => (
-              <m.p key={i} className="muted" variants={fadeUp}>
-                {a.playerName} named {nameOf(suspects, a.suspectId)} · {nameOf(weapons, a.weaponId)}{' '}
-                · {nameOf(locations, a.locationId)} — {a.correct ? 'correct!' : 'missed.'}
-              </m.p>
+              <m.div key={i} className="verdict-entry" variants={fadeUp}>
+                <m.p className="muted verdict-line">
+                  {a.playerName} named {nameOf(suspects, a.suspectId)} ·{' '}
+                  {nameOf(weapons, a.weaponId)} · {nameOf(locations, a.locationId)} —{' '}
+                  {a.correct ? 'correct!' : 'missed.'}
+                </m.p>
+                <m.span
+                  className={`pill verdict-pill${a.correct ? ' verdict-hit' : ''}`}
+                  initial={{ scale: 0.6, rotate: -8 }}
+                  animate={{ scale: 1, rotate: 0 }}
+                  transition={{ type: 'spring', stiffness: 380, damping: 16 }}
+                >
+                  {a.correct ? '✓ Solved' : '✗ Missed'}
+                </m.span>
+              </m.div>
             ))}
           </div>
         </m.div>

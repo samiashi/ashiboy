@@ -247,7 +247,7 @@
 .grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 10px;
+  gap: 14px;
 }
 
 .chip {
@@ -423,7 +423,7 @@
 .tally {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
   margin-top: 2px;
 }
 

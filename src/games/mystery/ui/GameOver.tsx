@@ -35,9 +35,31 @@ export default function GameOver({ view, send }: Props) {
           transition={{ delay: 0.25, duration: 0.4 }}
         >
           {solved
-            ? `The team cracks it${view.stars ? ` — ${'★'.repeat(view.stars)}${'☆'.repeat(3 - view.stars)}` : ''}.`
+            ? 'The team cracks it.'
             : 'No verdicts left. The file stays open… but here is what really happened.'}
         </m.p>
+        {solved && view.stars && (
+          <m.div
+            className="star-row"
+            aria-label={`${view.stars} out of 3 stars`}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.35 }}
+          >
+            {[1, 2, 3].map((i) => (
+              <m.span
+                key={i}
+                className={i <= view.stars! ? 'star-lit' : 'star-dim'}
+                aria-hidden="true"
+                initial={{ scale: 0, rotate: -30 }}
+                animate={{ scale: 1, rotate: 0 }}
+                transition={{ delay: 0.45 + i * 0.16, type: 'spring', stiffness: 320, damping: 13 }}
+              >
+                ★
+              </m.span>
+            ))}
+          </m.div>
+        )}
       </div>
 
       {solution && (
@@ -45,11 +67,20 @@ export default function GameOver({ view, send }: Props) {
           <m.h2 className="section-title" variants={fadeUp}>
             The truth
           </m.h2>
-          <m.p variants={fadeUp}>
-            <strong>{nameOf(view.suspects, solution.suspectId)}</strong> did it with{' '}
-            <strong>{nameOf(view.weapons, solution.weaponId)}</strong> in{' '}
-            <strong>{nameOf(view.locations, solution.locationId)}</strong>.
-          </m.p>
+          <div className="truth-tags">
+            <m.p className="truth-tag" variants={fadeUp}>
+              <span className="muted">Killer</span>
+              <strong>{nameOf(view.suspects, solution.suspectId)}</strong>
+            </m.p>
+            <m.p className="truth-tag" variants={fadeUp}>
+              <span className="muted">Weapon</span>
+              <strong>{nameOf(view.weapons, solution.weaponId)}</strong>
+            </m.p>
+            <m.p className="truth-tag" variants={fadeUp}>
+              <span className="muted">Scene</span>
+              <strong>{nameOf(view.locations, solution.locationId)}</strong>
+            </m.p>
+          </div>
         </m.div>
       )}
 

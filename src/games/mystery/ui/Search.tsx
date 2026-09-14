@@ -22,9 +22,16 @@ export default function Search({ view, send }: Props) {
     <div className="app">
       <m.div className="token-bar" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
         <span className="token-label">Search tokens</span>
-        <span className="token-count" aria-label={`${tokens} search tokens left`}>
+        <m.span
+          key={tokens}
+          className="token-count"
+          aria-label={`${tokens} search tokens left`}
+          initial={{ scale: 0.5 }}
+          animate={{ scale: 1 }}
+          transition={{ type: 'spring', stiffness: 420, damping: 18 }}
+        >
           {'🔍'.repeat(Math.max(0, tokens)) || '—'}
-        </span>
+        </m.span>
       </m.div>
 
       <m.div className="card" variants={staggerParent} initial="hidden" animate="show">
@@ -96,7 +103,13 @@ export default function Search({ view, send }: Props) {
         ) : (
           <div className="clue-list">
             {(view.clues ?? []).map((c) => (
-              <m.div key={c.id} className="clue-item" variants={fadeUp}>
+              <m.div
+                key={c.id}
+                className="clue-item"
+                initial={{ opacity: 0, y: 14, scale: 0.96 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                transition={{ type: 'spring', stiffness: 260, damping: 22 }}
+              >
                 <p className="clue-title">📌 {c.title}</p>
                 <p className="clue-detail">{c.detail}</p>
               </m.div>
