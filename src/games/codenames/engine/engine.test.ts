@@ -362,9 +362,58 @@ describe('rejoin, remove, play again', () => {
     expect(s.phase).toBe('gameOver');
     const teamsBefore = s.players.map((p) => [p.id, p.team, p.isSpymaster]);
     s = run(s, { t: 'playAgain', id: 'h' });
-    expect(s.phase).toBe('lobby');
+    // One-tap rematch: same teams, fresh board, straight back to play.
+    expect(s.phase).toBe('clue');
     expect(s.players.map((p) => [p.id, p.team, p.isSpymaster])).toEqual(teamsBefore);
-    expect(s.cards).toHaveLength(0);
+    expect(s.cards).toHaveLength(25);
     expect(s.winner).toBeUndefined();
+  });
+});
+
+describe('audit fixes', () => {
+  it('rejects malformed clue/guess wire input', () => {
+    let s = startGame();
+    const spy = spymasterOf(s, s.turn.team);
+    const before = s;
+    // Non-string word, missing number, tab-separated words, string index.
+    s = run(s, { t: 'giveClue', id: spy, word: 123 as unknown as string, number: 2 });
+    expect(s).toBe(before);
+    s = run(s, {
+      t: 'giveClue',
+      id: spy,
+      word: 'ok',
+      number: undefined as unknown as number,
+    });
+    expect(s).toBe(before);
+    s = run(s, { t: 'giveClue', id: spy, word: 'a\tb', number: 1 });
+    expect(s).toBe(before);
+    s = giveClue(s, 'fine', 2);
+    const op = operativeOf(s, s.turn.team);
+    const cardsBefore = s.cards;
+    s = run(s, { t: 'guess', id: op, cardIndex: '1' as unknown as number });
+    expect(s.cards).toBe(cardsBefore);
+  });
+
+  it('refuses to start with unteamed seats', () => {
+    let s = makeLobby();
+    s = run(s, { t: 'setTeam', id: 'h', targetId: 'p5', team: null });
+    expect(run(s, { t: 'start', id: 'h' }).phase).toBe('lobby');
+  });
+
+  it('disconnected seats cannot pass the turn', () => {
+    const s = startGame();
+    const op = operativeOf(s, s.turn.team);
+    const withDisc = {
+      ...s,
+      players: s.players.map((p) => (p.id === op ? { ...p, connected: false } : p)),
+    };
+    expect(run(withDisc, { t: 'passTurn', id: op }).phase).toBe(s.phase);
+  });
+
+  it('ejected seats cannot rejoin mid-game', () => {
+    let s = startGame();
+    s = run(s, { t: 'remove', id: 'h', targetId: 'p1' });
+    s = run(s, { t: 'rejoin', id: 'p1', token: 'tok1' });
+    expect(s.players.find((p) => p.id === 'p1')?.connected).toBe(false);
   });
 });

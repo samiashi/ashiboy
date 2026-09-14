@@ -553,3 +553,108 @@ describe('play again', () => {
     expect(s.players.every((p) => p.alive && p.role === undefined)).toBe(true);
   });
 });
+
+describe('audit fixes', () => {
+  it('normalizes blank/duplicate names and caps avatars', () => {
+    let s = createLobby('p0', 'A', '🦊', 'tok0');
+    s = run(s, { t: 'join', id: 'p1', name: '   ', avatar: 'x'.repeat(50), token: 'tok1' });
+    expect(s.players[1].name).toBe('Player 2');
+    expect(s.players[1].avatar.length).toBeLessThanOrEqual(8);
+    s = run(s, { t: 'join', id: 'p1', name: 'Dup', avatar: '🐼', token: 'tokX' });
+    expect(s.players).toHaveLength(2); // duplicate id rejected
+  });
+
+  it('ends immediately on mafia parity at deal', () => {
+    let s = createLobby('p0', 'A', '🦊', 'tok0');
+    for (let i = 1; i < 4; i++) {
+      s = run(s, { t: 'join', id: `p${i}`, name: `P${i}`, avatar: '🐼', token: `tok${i}` });
+    }
+    s = run(s, {
+      t: 'setConfig',
+      id: 'p0',
+      config: { ...s.config, mafiaCount: 2, hasDetective: false, hasDoctor: false },
+    });
+    s = run(s, { t: 'start', id: 'p0' });
+    expect(s.phase).toBe('gameOver');
+    expect(s.winner).toBe('mafia');
+  });
+
+  it('host can force-start the night from roleReveal', () => {
+    let s = makeGame(['A', 'B', 'C', 'D']);
+    const guest = s.players.find((p) => !p.isHost)!;
+    expect(run(s, { t: 'advance', id: guest.id }).phase).toBe('roleReveal');
+    s = run(s, { t: 'advance', id: 'p0' });
+    expect(s.phase).toBe('night');
+  });
+
+  it('disconnecting the last waiter auto-resolves the vote', () => {
+    let s = makeGame(['A', 'B', 'C', 'D', 'E'], {
+      mafiaCount: 1,
+      hasDetective: false,
+      hasDoctor: false,
+      skipFirstVote: false,
+    });
+    s = everyoneReady(s);
+    const [mafia] = byRole(s, 'mafia');
+    const [victim] = byRole(s, 'villager');
+    s = run(s, { t: 'nightAct', id: mafia, targetId: victim });
+    s = run(s, { t: 'advance', id: 'p0' });
+    s = run(s, { t: 'advance', id: 'p0' });
+    const voters = s.players.filter((p) => p.alive);
+    for (const p of voters.slice(0, -1)) s = run(s, { t: 'vote', id: p.id, targetId: null });
+    expect(s.phase).toBe('voting');
+    const last = voters[voters.length - 1];
+    s = run(s, { t: 'disconnect', id: last.id });
+    expect(s.phase).toBe('voteResult');
+    // Zero real votes is no-majority, not a tie.
+    expect(s.lastVote?.eliminatedId).toBeUndefined();
+    expect(s.lastVote?.tie).toBe(false);
+  });
+
+  it('ejected seats cannot rejoin with the old token', () => {
+    let s = makeGame(['A', 'B', 'C', 'D']);
+    s = run(s, { t: 'remove', id: 'p0', targetId: 'p2' });
+    s = run(s, { t: 'rejoin', id: 'p2', token: 'tok2' });
+    expect(s.players.find((p) => p.id === 'p2')?.connected).toBe(false);
+  });
+
+  it('disconnected actors cannot act and the dead cannot rush expiry', () => {
+    let s = makeGame(['A', 'B', 'C', 'D', 'E'], {
+      mafiaCount: 1,
+      hasDetective: false,
+      hasDoctor: false,
+      skipFirstVote: false,
+      discussionSeconds: 60,
+    });
+    s = everyoneReady(s);
+    const [mafia] = byRole(s, 'mafia');
+    s = run(s, { t: 'disconnect', id: mafia });
+    // Sole-actor disconnect auto-resolves the night without them.
+    expect(s.phase).toBe('dayReveal');
+    expect(s.lastNight?.diedId).toBeUndefined();
+    const NOW = 5_000_000;
+    s = reduce(s, { t: 'advance', id: 'p0' }, rng, NOW);
+    const dead = s.players.find((p) => !p.alive);
+    if (dead) {
+      expect(reduce(s, { t: 'advance', id: dead.id }, rng, NOW + 200_000).phase).toBe('discussion');
+    }
+  });
+
+  it('extendDiscussion recovers from an expired deadline', () => {
+    const NOW = 9_000_000;
+    let s = makeGame(['A', 'B', 'C', 'D', 'E'], {
+      mafiaCount: 1,
+      hasDetective: false,
+      hasDoctor: false,
+      discussionSeconds: 60,
+      skipFirstVote: false,
+    });
+    s = everyoneReady(s);
+    const [mafia] = byRole(s, 'mafia');
+    const [victim] = byRole(s, 'villager');
+    s = run(s, { t: 'nightAct', id: mafia, targetId: victim });
+    s = reduce(s, { t: 'advance', id: 'p0' }, rng, NOW);
+    s = reduce(s, { t: 'extendDiscussion', id: 'p0' }, rng, NOW + 600_000);
+    expect(s.discussionEndsAt).toBe(NOW + 660_000);
+  });
+});

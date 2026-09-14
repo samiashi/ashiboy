@@ -19,6 +19,12 @@ export type Rng = () => number;
 
 const otherTeam = (t: Team): Team => (t === 'red' ? 'blue' : 'red');
 
+function clampTurnSeconds(v: unknown): number {
+  const n = typeof v === 'number' ? Math.round(v) : 0;
+  if (!Number.isFinite(n) || n <= 0) return 0;
+  return Math.min(600, n);
+}
+
 export function suggestConfig(): GameConfig {
   return { turnSeconds: 180 };
 }
@@ -50,13 +56,24 @@ function makePlayer(
   return {
     id,
     name: name.trim().slice(0, 20),
-    avatar: avatar || '🎭',
+    avatar: avatar.slice(0, 8) || '🎭',
     token,
     team: null,
     isSpymaster: false,
     isHost,
     connected: true,
   };
+}
+
+/** Shared join-name normalization: fallback, dedup, and 20-char cap. */
+function uniqueName(rawName: string, players: Player[]): string {
+  const base = rawName.trim().slice(0, 20) || `Player ${players.length + 1}`;
+  let name = base;
+  let suffix = 2;
+  while (players.some((p) => p.name === name)) {
+    name = `${base} ${suffix++}`.slice(0, 20);
+  }
+  return name;
 }
 
 function findPlayer(state: GameState, id: string): Player | undefined {
@@ -117,10 +134,8 @@ export function reduce(
   switch (action.t) {
     case 'join': {
       if (state.phase !== 'lobby' || state.players.length >= MAX_PLAYERS) return state;
-      let name = action.name.trim().slice(0, 20) || `Player ${state.players.length + 1}`;
-      let suffix = 2;
-      while (state.players.some((p) => p.name === name))
-        name = `${action.name.trim().slice(0, 20)} ${suffix++}`;
+      if (findPlayer(state, action.id)) return state;
+      const name = uniqueName(action.name, state.players);
       return {
         ...state,
         players: [
@@ -146,14 +161,20 @@ export function reduce(
       if (state.phase === 'lobby') {
         return { ...state, players: state.players.filter((p) => p.id !== target.id) };
       }
+      // Mid-game ejection revokes the token so the seat can't be reclaimed.
       return {
         ...state,
-        players: state.players.map((p) => (p.id === target.id ? { ...p, connected: false } : p)),
+        players: state.players.map((p) =>
+          p.id === target.id ? { ...p, connected: false, token: `removed-${p.id}` } : p,
+        ),
       };
     }
 
     case 'disconnect': {
+      const leaving = findPlayer(state, action.id);
+      if (!leaving) return state;
       if (state.phase === 'lobby') {
+        if (leaving.isHost) return state;
         return { ...state, players: state.players.filter((p) => p.id !== action.id) };
       }
       return {
@@ -215,7 +236,7 @@ export function reduce(
       return {
         ...state,
         config: {
-          turnSeconds: Math.max(0, Math.round(action.config.turnSeconds) || 0),
+          turnSeconds: clampTurnSeconds(action.config.turnSeconds),
         },
       };
     }
@@ -224,6 +245,8 @@ export function reduce(
       const me = findPlayer(state, action.id);
       if (!me?.isHost || state.phase !== 'lobby') return state;
       if (state.players.length < MIN_PLAYERS) return state;
+      // Every seat must be placed before dealing — matches the lobby blockers.
+      if (state.players.some((p) => p.team === null)) return state;
       // Each side needs exactly one spymaster and at least one operative.
       for (const team of ['red', 'blue'] as Team[]) {
         const members = state.players.filter((p) => p.team === team);
@@ -248,11 +271,15 @@ export function reduce(
       if (state.phase !== 'clue') return state;
       const me = findPlayer(state, action.id);
       if (!me || !me.connected || !me.isSpymaster || me.team !== state.turn.team) return state;
+      if (typeof action.word !== 'string') return state;
       const word = action.word.trim().slice(0, 30);
-      if (word.length === 0 || word.includes(' ')) return state; // one word only
+      if (word.length === 0 || /\s/.test(word)) return state; // one word only
       const count = action.number;
-      if (typeof count === 'number' && (!Number.isInteger(count) || count < 0 || count > 9)) {
-        return state;
+      // Reject malformed counts (missing/NaN/bool) — never store undefined.
+      if (count !== 'unlimited') {
+        if (typeof count !== 'number' || !Number.isInteger(count) || count < 0 || count > 9) {
+          return state;
+        }
       }
       const clue = { team: state.turn.team, word, number: count };
       return {
@@ -267,6 +294,7 @@ export function reduce(
       if (state.phase !== 'guessing') return state;
       const me = findPlayer(state, action.id);
       if (!me || !me.connected || me.isSpymaster || me.team !== state.turn.team) return state;
+      if (!Number.isInteger(action.cardIndex)) return state;
       const card = state.cards[action.cardIndex];
       if (!card || card.revealed || !state.turn.clue) return state;
 
@@ -306,7 +334,7 @@ export function reduce(
     case 'passTurn': {
       if (state.phase !== 'clue' && state.phase !== 'guessing') return state;
       const me = findPlayer(state, action.id);
-      if (!me) return state;
+      if (!me || !me.connected) return state;
       // The host may pass anytime; anyone may pass once the timer expires.
       const expired = state.turnEndsAt !== undefined && now >= state.turnEndsAt;
       if (!me.isHost && !expired) return state;
@@ -322,21 +350,49 @@ export function reduce(
       ) {
         return state;
       }
-      return { ...state, turnEndsAt: state.turnEndsAt + EXTEND_MS };
+      return { ...state, turnEndsAt: Math.max(state.turnEndsAt, now) + EXTEND_MS };
     }
 
     case 'playAgain': {
       const me = findPlayer(state, action.id);
       if (!me?.isHost || state.phase !== 'gameOver') return state;
+      const players = state.players.filter((p) => p.connected).map((p) => ({ ...p }));
+      // One-tap rematch: same teams, fresh board. Fall back to the lobby when
+      // the teams no longer satisfy the start requirements.
+      const teamsOk =
+        players.length >= MIN_PLAYERS &&
+        (['red', 'blue'] as Team[]).every((team) => {
+          const members = players.filter((p) => p.team === team);
+          return (
+            members.filter((p) => p.isSpymaster).length === 1 &&
+            members.filter((p) => !p.isSpymaster).length >= 1
+          );
+        });
+      if (!teamsOk) {
+        return {
+          ...state,
+          phase: 'lobby',
+          cards: [],
+          startingTeam: null,
+          turn: { team: 'red', clue: null, guessesMade: 0 },
+          clues: [],
+          turnEndsAt: undefined,
+          winner: undefined,
+          players,
+        };
+      }
+      const startingTeam: Team = rng() < 0.5 ? 'red' : 'blue';
       return {
         ...state,
-        phase: 'lobby',
-        cards: [],
-        startingTeam: null,
-        turn: { team: 'red', clue: null, guessesMade: 0 },
+        phase: 'clue',
+        cards: dealBoard(WORDS, startingTeam, rng),
+        startingTeam,
+        turn: { team: startingTeam, clue: null, guessesMade: 0 },
         clues: [],
-        turnEndsAt: undefined,
+        turnEndsAt:
+          state.config.turnSeconds > 0 ? now + state.config.turnSeconds * 1000 : undefined,
         winner: undefined,
+        players,
       };
     }
   }
@@ -410,10 +466,18 @@ export function viewFor(state: GameState, playerId: string): PlayerView {
     view.startingTeam = state.startingTeam;
   }
 
-  view.remaining = {
-    red: state.cards.filter((c) => c.kind === 'red' && !c.revealed).length,
-    blue: state.cards.filter((c) => c.kind === 'blue' && !c.revealed).length,
-  };
+  view.remaining = (() => {
+    // Single pass — the old code filtered the 25-card board twice per view
+    // (50 visits × n recipients per publish).
+    let red = 0;
+    let blue = 0;
+    for (const c of state.cards) {
+      if (c.revealed) continue;
+      if (c.kind === 'red') red++;
+      else if (c.kind === 'blue') blue++;
+    }
+    return { red, blue };
+  })();
 
   return view;
 }

@@ -57,13 +57,24 @@ function makePlayer(
   return {
     id,
     name: name.trim().slice(0, 20),
-    avatar: avatar || '🎭',
+    avatar: avatar.slice(0, 8) || '🎭',
     token,
     isHost,
     connected: true,
     alive: true,
     ready: false,
   };
+}
+
+/** Shared join-name normalization: fallback, dedup, and 20-char cap. */
+function uniqueName(rawName: string, players: Player[]): string {
+  const base = rawName.trim().slice(0, 20) || `Player ${players.length + 1}`;
+  let name = base;
+  let suffix = 2;
+  while (players.some((p) => p.name === name)) {
+    name = `${base} ${suffix++}`.slice(0, 20);
+  }
+  return name;
 }
 
 function findPlayer(state: GameState, id: string): Player | undefined {
@@ -101,10 +112,8 @@ export function reduce(
   switch (action.t) {
     case 'join': {
       if (state.phase !== 'lobby' || state.players.length >= MAX_PLAYERS) return state;
-      let name = action.name.trim().slice(0, 20) || `Player ${state.players.length + 1}`;
-      let suffix = 2;
-      while (state.players.some((p) => p.name === name))
-        name = `${action.name.trim().slice(0, 20)} ${suffix++}`;
+      if (findPlayer(state, action.id)) return state;
+      const name = uniqueName(action.name, state.players);
       return {
         ...state,
         players: [
@@ -124,29 +133,64 @@ export function reduce(
     }
 
     case 'disconnect': {
+      const leaving = findPlayer(state, action.id);
+      if (!leaving) return state;
       if (state.phase === 'lobby') {
+        // The host's tab is the room — never leave a hostless lobby behind.
+        if (leaving.isHost) return state;
         return { ...state, players: state.players.filter((p) => p.id !== action.id) };
       }
-      // Mid-game: keep the player in the roster so the game can continue.
-      return {
+      // Mid-game: keep the seat so the game can continue, but drop its
+      // pending vote/pick so an absent player can't decide outcomes.
+      const night: GameState['night'] = {
+        ...state.night,
+        mafiaTargets: { ...state.night.mafiaTargets },
+      };
+      delete night.mafiaTargets[action.id];
+      if (night.detectiveTarget && leaving.role === 'detective') {
+        // A disconnected detective's pending pick shouldn't linger.
+        night.detectiveTarget = undefined;
+      }
+      if (night.doctorTarget && leaving.role === 'doctor') {
+        night.doctorTarget = undefined;
+      }
+      const votes = { ...state.votes };
+      delete votes[action.id];
+      const next: GameState = {
         ...state,
+        night,
+        votes,
         players: state.players.map((p) => (p.id === action.id ? { ...p, connected: false } : p)),
       };
+      return autoResolve(next, rng);
     }
 
     case 'remove': {
       // Host-only ejection (wrong seat, duplicate). Lobby: the seat vanishes.
-      // Mid-game: equivalent to disconnecting (seat kept so the game continues).
+      // Mid-game: the seat is kept so the game continues, but its token is
+      // revoked so the ejected device can't reclaim it.
       const me = findPlayer(state, action.id);
       const target = findPlayer(state, action.targetId);
       if (!me?.isHost || !target || target.isHost) return state;
       if (state.phase === 'lobby') {
         return { ...state, players: state.players.filter((p) => p.id !== target.id) };
       }
-      return {
-        ...state,
-        players: state.players.map((p) => (p.id === target.id ? { ...p, connected: false } : p)),
+      const night: GameState['night'] = {
+        ...state.night,
+        mafiaTargets: { ...state.night.mafiaTargets },
       };
+      delete night.mafiaTargets[target.id];
+      const votes = { ...state.votes };
+      delete votes[target.id];
+      const next: GameState = {
+        ...state,
+        night,
+        votes,
+        players: state.players.map((p) =>
+          p.id === target.id ? { ...p, connected: false, token: `removed-${p.id}` } : p,
+        ),
+      };
+      return autoResolve(next, rng);
     }
 
     case 'setConfig': {
@@ -159,7 +203,7 @@ export function reduce(
           mafiaCount: clamp(Math.round(action.config.mafiaCount) || 1, 1, max),
           hasDetective: !!action.config.hasDetective,
           hasDoctor: !!action.config.hasDoctor,
-          discussionSeconds: Math.max(0, Math.round(action.config.discussionSeconds) || 0),
+          discussionSeconds: clamp(Math.round(action.config.discussionSeconds) || 0, 0, 600),
           skipFirstVote: !!action.config.skipFirstVote,
         },
       };
@@ -181,22 +225,34 @@ export function reduce(
       while (bag.length < n) bag.push('villager');
       shuffle(bag, rng);
 
+      const players = state.players.map((p, i) => ({
+        ...p,
+        role: bag[i],
+        alive: true,
+        ready: false,
+      }));
+      // A misconfigured setup can already be mafia parity (e.g. 4p / 2 mafia).
+      // End immediately instead of playing a decided game.
+      const winner = checkWin(players);
       return {
         ...state,
-        phase: 'roleReveal',
+        phase: winner ? 'gameOver' : 'roleReveal',
         round: 0,
-        winner: undefined,
+        winner,
         lastNight: undefined,
         lastInvestigation: undefined,
         lastVote: undefined,
         votes: {},
+        discussionEndsAt: undefined,
         night: { mafiaTargets: {} },
-        players: state.players.map((p, i) => ({ ...p, role: bag[i], alive: true, ready: false })),
+        players,
       };
     }
 
     case 'ackRole': {
       if (state.phase !== 'roleReveal') return state;
+      const me = findPlayer(state, action.id);
+      if (!me || !me.connected) return state;
       const players = state.players.map((p) => (p.id === action.id ? { ...p, ready: true } : p));
       const next = { ...state, players };
       const everyoneReady = players.every((p) => !p.connected || p.ready);
@@ -207,7 +263,8 @@ export function reduce(
       if (state.phase !== 'night') return state;
       const me = findPlayer(state, action.id);
       const target = findPlayer(state, action.targetId);
-      if (!me || !target || !me.alive || !target.alive) return state;
+      if (!me || !target || !me.alive || !me.connected) return state;
+      if (!target.alive || !target.connected) return state;
 
       const night: GameState['night'] = {
         ...state.night,
@@ -231,15 +288,22 @@ export function reduce(
 
     case 'advance': {
       const me = findPlayer(state, action.id);
-      if (!me) return state;
+      if (!me || !me.connected) return state;
+      if (state.phase === 'roleReveal') {
+        // Host fallback so one stalled device can't park the table forever.
+        if (!me.isHost) return state;
+        return startNight(state);
+      }
       if (state.phase === 'dayReveal') {
         if (!me.isHost) return state;
         return beginDiscussion(state, now);
       }
       if (state.phase === 'discussion') {
-        // The host may advance anytime; anyone may advance once the timer expires.
+        // The host may advance anytime; anyone alive may advance once the timer expires.
         const expired = state.discussionEndsAt !== undefined && now >= state.discussionEndsAt;
-        if (!me.isHost && !expired) return state;
+        if (!me.isHost) {
+          if (!expired || !me.alive) return state;
+        }
         // Day 1 with the house rule on is discussion only — straight to night 2.
         if (state.round === 1 && state.config.skipFirstVote) return startNight(state);
         return { ...state, phase: 'voting', votes: {}, discussionEndsAt: undefined };
@@ -256,7 +320,8 @@ export function reduce(
       if (!me?.isHost || state.phase !== 'discussion' || state.discussionEndsAt === undefined) {
         return state;
       }
-      return { ...state, discussionEndsAt: state.discussionEndsAt + 60_000 };
+      // Extend from now when the deadline already passed, not from the stale base.
+      return { ...state, discussionEndsAt: Math.max(state.discussionEndsAt, now) + 60_000 };
     }
 
     case 'skipNight': {
@@ -292,6 +357,10 @@ export function reduce(
     case 'playAgain': {
       const me = findPlayer(state, action.id);
       if (!me?.isHost || state.phase !== 'gameOver') return state;
+      // Drop seats that never reconnected — starting with phantom roles helps nobody.
+      const players = state.players
+        .filter((p) => p.connected)
+        .map((p) => ({ ...p, role: undefined, alive: true, ready: false }));
       return {
         ...state,
         phase: 'lobby',
@@ -301,8 +370,9 @@ export function reduce(
         lastInvestigation: undefined,
         lastVote: undefined,
         votes: {},
+        discussionEndsAt: undefined,
         night: { mafiaTargets: {} },
-        players: state.players.map((p) => ({ ...p, role: undefined, alive: true, ready: false })),
+        players,
       };
     }
   }
@@ -326,9 +396,27 @@ function startNight(state: GameState): GameState {
     votes: {},
     lastNight: undefined,
     lastInvestigation: undefined,
+    lastVote: undefined,
     discussionEndsAt: undefined,
     players: state.players.map((p) => ({ ...p, ready: false })),
   };
+}
+
+/** After a disconnect/eject, finish phases that are no longer waiting on anyone. */
+function autoResolve(state: GameState, rng: Rng): GameState {
+  if (state.phase === 'roleReveal') {
+    const everyoneReady = state.players.every((p) => !p.connected || p.ready);
+    if (everyoneReady) return startNight(state);
+    return state;
+  }
+  if (state.phase === 'night' && pendingActors(state).length === 0) {
+    return resolveNight(state, rng);
+  }
+  if (state.phase === 'voting') {
+    const waitingOn = state.players.filter((p) => p.alive && p.connected && !(p.id in state.votes));
+    if (waitingOn.length === 0) return resolveVote(state);
+  }
+  return state;
 }
 
 /** Alive, connected players whose night action is still missing. */
@@ -379,13 +467,16 @@ function resolveNight(state: GameState, rng: Rng): GameState {
 }
 
 function resolveVote(state: GameState): GameState {
+  // Only living, connected seats count — stale votes from leavers are dropped.
   const counts = new Map<string, number>();
-  for (const t of Object.values(state.votes)) {
+  for (const [voterId, t] of Object.entries(state.votes)) {
+    const voter = findPlayer(state, voterId);
+    if (!voter || !voter.alive || !voter.connected) continue;
     if (t) counts.set(t, (counts.get(t) ?? 0) + 1);
   }
   let topId: string | undefined;
   let topCount = 0;
-  let tied = true;
+  let tied = false;
   for (const [id, c] of counts) {
     if (c > topCount) {
       topId = id;
@@ -395,7 +486,9 @@ function resolveVote(state: GameState): GameState {
       tied = true;
     }
   }
+  // Zero votes is "no majority", not a tie.
   const eliminatedId = topId && !tied ? topId : undefined;
+  const tie = counts.size > 0 && !eliminatedId;
   const players = eliminatedId
     ? state.players.map((p) => (p.id === eliminatedId ? { ...p, alive: false } : p))
     : state.players;
@@ -403,7 +496,7 @@ function resolveVote(state: GameState): GameState {
   return {
     ...state,
     players,
-    lastVote: { eliminatedId, tie: !eliminatedId },
+    lastVote: { eliminatedId, tie },
     winner,
     phase: winner ? 'gameOver' : 'voteResult',
   };
