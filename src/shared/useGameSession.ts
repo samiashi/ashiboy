@@ -75,28 +75,76 @@ export function useGameSession<View, Msg>(
   const [session, setSession] = useState<RoomTicket | null>(() => options.loadTicket());
   const [muted, setMutedState] = useState(options.readMuted());
   const sessionRef = useRef<SessionHandle<Msg> | null>(null);
+  const connectTimer = useRef<number | undefined>(undefined);
   const optsRef = useRef(options);
   optsRef.current = options;
 
   // Leaving the game (e.g. back to the hub) must release the seat / room —
   // otherwise the host keeps seeing a ghost player.
-  useEffect(() => () => sessionRef.current?.destroy(), []);
+  useEffect(
+    () => () => {
+      sessionRef.current?.destroy();
+      window.clearTimeout(connectTimer.current);
+    },
+    [],
+  );
 
-  const handleView = useCallback((v: View) => {
-    setView(v);
-    setConnecting(false);
-    // Guests persist their seat inside the client on welcome — pick it up so
-    // the Home screen's "Rejoin as…" card reflects the current room.
-    setSession(optsRef.current.loadTicket());
+  const clearConnectTimer = useCallback(() => {
+    window.clearTimeout(connectTimer.current);
+    connectTimer.current = undefined;
   }, []);
 
+  const armConnectTimer = useCallback(() => {
+    window.clearTimeout(connectTimer.current);
+    // PeerJS only resolves via view/error. If signaling is unreachable
+    // (offline LAN), neither fires — escape the stuck "Connecting…" state.
+    connectTimer.current = window.setTimeout(() => {
+      setConnecting((c) => {
+        if (c) {
+          setError('Connection timed out — check the code and your connection, then try again.');
+        }
+        return false;
+      });
+    }, 15000);
+  }, []);
+
+  const handleView = useCallback(
+    (v: View) => {
+      clearConnectTimer();
+      setView(v);
+      setConnecting(false);
+      // Guests persist their seat inside the client on welcome — pick it up so
+      // the Home screen's "Rejoin as…" card reflects the current room. Skip
+      // the second state set when the ticket is unchanged (every publish).
+      const next = optsRef.current.loadTicket();
+      setSession((prev) => {
+        if (
+          prev === null ||
+          next === null ||
+          prev.code !== next.code ||
+          prev.playerId !== next.playerId ||
+          prev.token !== next.token ||
+          prev.name !== next.name ||
+          prev.avatar !== next.avatar
+        ) {
+          return next;
+        }
+        return prev;
+      });
+    },
+    [clearConnectTimer],
+  );
+
   const handleError = useCallback((message: string) => {
+    clearConnectTimer();
     setError(message);
     setConnecting(false);
     const gone = optsRef.current.roomGoneMessage;
     if (
       message === 'rejoin-failed' ||
       message === 'That game has already started.' ||
+      message === 'You were removed from the game.' ||
+      message === 'Room is full.' ||
       message === gone
     ) {
       setSession(null);
@@ -124,21 +172,25 @@ export function useGameSession<View, Msg>(
       setRoomCode(code);
       setConnecting(true);
       setError(null);
+      armConnectTimer();
     },
-    [handleError, handleView, rememberProfile],
+    [armConnectTimer, handleError, handleView, rememberProfile],
   );
 
   const joinGame = useCallback(
     (code: string, name: string, avatar: string) => {
       rememberProfile(name, avatar);
       sessionRef.current?.destroy();
+      const normalized = code.trim().toUpperCase();
       const client = optsRef.current.createClient(handleView, handleError);
-      client.join(code, name, avatar);
+      client.join(normalized, name, avatar);
       sessionRef.current = client;
+      setRoomCode(normalized);
       setConnecting(true);
       setError(null);
+      armConnectTimer();
     },
-    [handleError, handleView, rememberProfile],
+    [armConnectTimer, handleError, handleView, rememberProfile],
   );
 
   const rejoin = useCallback(
@@ -153,8 +205,9 @@ export function useGameSession<View, Msg>(
       setRoomCode(ticket.code);
       setConnecting(true);
       setError(null);
+      armConnectTimer();
     },
-    [handleError, handleView],
+    [armConnectTimer, handleError, handleView],
   );
 
   const forgetSession = useCallback(() => {
@@ -167,11 +220,12 @@ export function useGameSession<View, Msg>(
   }, []);
 
   const toggleMute = useCallback(() => {
-    setMutedState((m) => {
-      optsRef.current.writeMuted(!m);
-      return !m;
-    });
+    setMutedState((m) => !m);
   }, []);
+
+  useEffect(() => {
+    optsRef.current.writeMuted(muted);
+  }, [muted]);
 
   const send = useCallback((msg: Msg) => sessionRef.current?.send(msg), []);
 

@@ -19,24 +19,37 @@ const PEER_PREFIX = 'ashiboy-codenames-';
 
 /** Attaches the sender's player id to a wire message. Returns null for 'join' (host is already in). */
 export function toAction(playerId: string, msg: ClientMessage): Action | null {
+  if (!msg || typeof msg !== 'object' || typeof (msg as { t?: unknown }).t !== 'string') {
+    return null;
+  }
   switch (msg.t) {
     case 'join':
       return null;
     case 'remove':
+      if (typeof msg.targetId !== 'string') return null;
       return { t: 'remove', id: playerId, targetId: msg.targetId };
     case 'setTeam':
+      if (typeof msg.targetId !== 'string') return null;
+      if (msg.team !== null && msg.team !== 'red' && msg.team !== 'blue') return null;
       return { t: 'setTeam', id: playerId, targetId: msg.targetId, team: msg.team };
     case 'setSpymaster':
+      if (typeof msg.targetId !== 'string' || typeof msg.value !== 'boolean') return null;
       return { t: 'setSpymaster', id: playerId, targetId: msg.targetId, value: msg.value };
     case 'randomize':
       return { t: 'randomize', id: playerId };
     case 'setConfig':
+      if (!msg.config || typeof msg.config !== 'object') return null;
       return { t: 'setConfig', id: playerId, config: msg.config };
     case 'start':
       return { t: 'start', id: playerId };
     case 'giveClue':
+      // Shape-checked here; value-checked in the engine. Never let raw peer
+      // input reach .trim() unchecked.
+      if (typeof msg.word !== 'string') return null;
+      if (msg.number !== 'unlimited' && typeof msg.number !== 'number') return null;
       return { t: 'giveClue', id: playerId, word: msg.word, number: msg.number };
     case 'guess':
+      if (!Number.isInteger(msg.cardIndex)) return null;
       return { t: 'guess', id: playerId, cardIndex: msg.cardIndex };
     case 'endTurn':
       return { t: 'endTurn', id: playerId };
@@ -46,8 +59,13 @@ export function toAction(playerId: string, msg: ClientMessage): Action | null {
       return { t: 'extendTurn', id: playerId };
     case 'playAgain':
       return { t: 'playAgain', id: playerId };
+    default:
+      return null;
   }
 }
+
+/** Sent to a device right before its ejected connection is closed. */
+export const REMOVED_MESSAGE = 'You were removed from the game.';
 
 /**
  * The authoritative game session, running on the host player's device.
@@ -62,6 +80,7 @@ export class GameHost {
   private state: GameState;
   private conns = new Map<string, DataConnection>();
   private destroyed = false;
+  private timer?: number;
 
   constructor(
     code: string,
@@ -82,6 +101,17 @@ export class GameHost {
         this.onError('That room code is taken — try creating again.');
       else this.onError(`Network error (${err?.type ?? 'unknown'}). Check your connection.`);
     });
+    // Host-side timer enforcement: pass expired turns even when guests stall.
+    this.timer = window.setInterval(() => {
+      if (this.destroyed) return;
+      if (
+        (this.state.phase === 'clue' || this.state.phase === 'guessing') &&
+        this.state.turnEndsAt !== undefined &&
+        Date.now() >= this.state.turnEndsAt
+      ) {
+        this.dispatch({ t: 'passTurn', id: this.hostId });
+      }
+    }, 1000);
   }
 
   /** Entry point for the host's own UI. */
@@ -94,11 +124,14 @@ export class GameHost {
     if (this.destroyed) return;
     this.state = reduce(this.state, action);
     if (action.t === 'remove') {
-      // Revoke the ejected seat's connection. Removed from the map first so
-      // its close handler no-ops via the ownership check in drop().
       const conn = this.conns.get(action.targetId);
       if (conn) {
         this.conns.delete(action.targetId);
+        try {
+          conn.send({ t: 'error', message: REMOVED_MESSAGE } satisfies HostMessage);
+        } catch {
+          /* already gone */
+        }
         try {
           conn.close();
         } catch {
@@ -148,20 +181,32 @@ export class GameHost {
         playerId = randomId();
         const token = randomToken();
         this.conns.set(playerId, conn);
+        const before = this.state.players.length;
         this.dispatch({
           t: 'join',
           id: playerId,
-          name: String(msg.name ?? ''),
-          avatar: String(msg.avatar ?? ''),
+          name: String(msg.name ?? '').slice(0, 20),
+          avatar: String(msg.avatar ?? '').slice(0, 8),
           token,
         });
+        const landed = this.state.players.some((p) => p.id === playerId);
+        if (!landed || this.state.players.length === before) {
+          this.conns.delete(playerId);
+          conn.send({ t: 'error', message: 'Room is full.' } satisfies HostMessage);
+          playerId = undefined;
+          return;
+        }
         conn.send({ t: 'welcome', playerId, token } satisfies HostMessage);
         return;
       }
 
       if (!playerId) return; // must join first
-      const action = toAction(playerId, msg);
-      if (action) this.dispatch(action);
+      try {
+        const action = toAction(playerId, msg);
+        if (action) this.dispatch(action);
+      } catch {
+        // Malformed wire input must never take down the host.
+      }
     });
 
     const drop = () => {
@@ -192,6 +237,7 @@ export class GameHost {
 
   destroy(): void {
     this.destroyed = true;
+    window.clearInterval(this.timer);
     this.peer.destroy();
   }
 }

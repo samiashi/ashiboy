@@ -26,21 +26,32 @@ export function useWakeLock(active: boolean): void {
         if (!nav.wakeLock) return;
         const acquired = await nav.wakeLock.request('screen');
         if (cancelled) await acquired.release();
-        else lock = acquired;
+        else {
+          lock = acquired;
+          // The sentinel auto-releases when the tab hides — null it so the
+          // visibility handler re-acquires on return.
+          const onRelease = () => {
+            lock = null;
+          };
+          (acquired as unknown as EventTarget).addEventListener?.('release', onRelease);
+        }
       } catch {
         // denied or unavailable — the game works fine without it
       }
     };
 
     void request();
-    const onVisible = () => {
-      if (document.visibilityState === 'visible' && !lock) void request();
+    // Single listener: hidden nulls the lock (browsers drop it without firing
+    // release everywhere), visible re-acquires.
+    const onVisibility = () => {
+      if (document.visibilityState === 'hidden') lock = null;
+      else if (document.visibilityState === 'visible' && !lock) void request();
     };
-    document.addEventListener('visibilitychange', onVisible);
+    document.addEventListener('visibilitychange', onVisibility);
 
     return () => {
       cancelled = true;
-      document.removeEventListener('visibilitychange', onVisible);
+      document.removeEventListener('visibilitychange', onVisibility);
       if (lock) void lock.release().catch(() => {});
     };
   }, [active]);

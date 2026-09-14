@@ -120,6 +120,22 @@ describe('useGameSession', () => {
     });
   });
 
+  it('stores the room code on fresh join (normalized)', () => {
+    const { result, net } = setup();
+    act(() => result.current.joinGame('abc123', 'Sam', '🦊'));
+    expect(net.client.joined).toMatchObject({ code: 'ABC123' });
+    expect(result.current.roomCode).toBe('ABC123');
+  });
+
+  it('clears ejected/full seats instead of parking rejoin', () => {
+    const net = makeNet();
+    const { result } = setup(net, ticket);
+    act(() => result.current.joinGame('ABC123', 'Sam', '🦊'));
+    net.emitError('You were removed from the game.');
+    expect(result.current.session).toBeNull();
+    expect(result.current.error).toBe('You were removed from the game.');
+  });
+
   it('forwards actions to the live session', () => {
     const { result, net } = setup();
     act(() => result.current.createGame('Sam', '🦊'));

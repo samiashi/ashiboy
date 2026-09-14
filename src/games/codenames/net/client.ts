@@ -26,6 +26,7 @@ export class GameClient {
   private conn?: DataConnection;
   private destroyed = false;
   private silent = false;
+  private gen = 0;
   playerId?: string;
 
   constructor(
@@ -34,22 +35,27 @@ export class GameClient {
   ) {}
 
   join(code: string, name: string, avatar: string, rejoin?: RejoinTicket): void {
+    const normalized = code.trim().toUpperCase();
+    const myGen = ++this.gen;
     this.silent = false;
     this.peer = new Peer();
     this.peer.on('open', () => {
-      const conn = this.peer!.connect(PEER_PREFIX + code, { reliable: true });
+      if (myGen !== this.gen || this.destroyed) return;
+      const conn = this.peer!.connect(PEER_PREFIX + normalized, { reliable: true });
       this.conn = conn;
 
       conn.on('open', () => {
+        if (myGen !== this.gen) return;
         conn.send({ t: 'join', name, avatar, rejoin } satisfies ClientMessage);
       });
       conn.on('data', (raw) => {
+        if (myGen !== this.gen) return;
         const msg = raw as HostMessage;
         if (!msg || typeof msg !== 'object') return;
 
         if (msg.t === 'welcome') {
           this.playerId = msg.playerId;
-          saveSession({ code, playerId: msg.playerId, token: msg.token, name, avatar });
+          saveSession({ code: normalized, playerId: msg.playerId, token: msg.token, name, avatar });
         } else if (msg.t === 'state') {
           this.onView(msg.view);
         } else if (msg.t === 'error') {
@@ -57,30 +63,38 @@ export class GameClient {
             // Seat is gone (e.g. left during lobby) — take a fresh seat instead.
             // Tear down the rejected connection first so it doesn't linger on the host.
             clearSession();
+            const oldConn = this.conn;
+            const oldPeer = this.peer;
+            this.conn = undefined;
+            this.peer = undefined;
             this.silent = true;
             try {
-              this.conn?.close();
+              oldConn?.close();
             } catch {
               /* already gone */
             }
             try {
-              this.peer?.destroy();
+              oldPeer?.destroy();
             } catch {
               /* already gone */
             }
             this.conn = undefined;
             this.peer = undefined;
-            this.join(code, name, avatar);
+            this.join(normalized, name, avatar);
             return;
           }
-          if (msg.message === 'That game has already started.') {
-            // If our old seat were still valid, rejoin would have worked — it's dead.
+          if (
+            msg.message === 'That game has already started.' ||
+            msg.message === 'You were removed from the game.' ||
+            msg.message === 'Room is full.'
+          ) {
             clearSession();
           }
           this.onError(msg.message);
         }
       });
       conn.on('close', () => {
+        if (myGen !== this.gen) return;
         if (!this.destroyed && !this.silent) this.onError('Lost connection to the host.');
       });
     });
