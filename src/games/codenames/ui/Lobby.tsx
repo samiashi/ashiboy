@@ -1,4 +1,6 @@
+import { useMemo } from 'react';
 import { AnimatePresence, m } from 'motion/react';
+import { MIN_PLAYERS } from '@/games/codenames/engine/engine';
 import { ClientMessage, PlayerView, Team } from '@/games/codenames/engine/types';
 import { fadeUp, staggerParent } from '@/anim';
 import { formatClock } from '@/shared/format';
@@ -22,9 +24,9 @@ const TURN_PRESETS = [
 /** Why the game can't start yet (mirrors the engine's start validation). */
 function blockers(view: PlayerView): string[] {
   const out: string[] = [];
-  if (view.players.length < 4) {
+  if (view.players.length < MIN_PLAYERS) {
     out.push(
-      `Need at least ${4 - view.players.length} more player${view.players.length === 3 ? '' : 's'}`,
+      `Need at least ${MIN_PLAYERS - view.players.length} more player${view.players.length === MIN_PLAYERS - 1 ? '' : 's'}`,
     );
   }
   for (const team of ['red', 'blue'] as Team[]) {
@@ -71,7 +73,6 @@ function TeamColumn({
               className={`player-row${p.connected ? '' : ' player-offline'}`}
               variants={fadeUp}
               exit={{ opacity: 0, x: -20 }}
-              layout
             >
               <span>
                 <span className="avatar">{p.avatar}</span>
@@ -95,6 +96,7 @@ function TeamColumn({
                 {me.isHost && p.id !== me.id && (
                   <button
                     className="btn btn-ghost btn-mini"
+                    aria-label={`Remove ${p.name}`}
                     onClick={() => send({ t: 'remove', targetId: p.id })}
                   >
                     Remove
@@ -130,9 +132,11 @@ function TeamColumn({
 export default function Lobby({ view, roomCode, send }: Props) {
   const isHost = view.me.isHost;
   const config = view.config!;
-  const problems = blockers(view);
-
-  const inviteLink = `${location.origin}${location.pathname}#/codenames?join=${roomCode}`;
+  const problems = useMemo(() => blockers(view), [view]);
+  const inviteLink = useMemo(() => {
+    const hashBase = location.hash.split('?')[0].replace(/^#/, '') || '/codenames';
+    return `${location.origin}${location.pathname}#${hashBase}?join=${roomCode}`;
+  }, [roomCode]);
 
   return (
     <div className="app">

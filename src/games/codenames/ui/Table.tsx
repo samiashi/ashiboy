@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { m } from 'motion/react';
 import { ClientMessage, PlayerView, Team, ViewCard } from '@/games/codenames/engine/types';
-import { fadeUp, popIn, staggerParent } from '@/anim';
+import { fadeUp, staggerParent } from '@/anim';
 import { playSound } from '@/games/codenames/sound';
 import { CountdownRing } from '@/shared/components/CountdownRing';
 import { Stepper } from '@/shared/components/Stepper';
@@ -30,7 +30,6 @@ function Board({ cards, onGuess }: { cards: ViewCard[]; onGuess?: (index: number
             className={cls}
             aria-label={`Guess ${c.word}`}
             onClick={() => onGuess(i)}
-            variants={popIn}
             whileTap={{ scale: 0.93 }}
           >
             {c.word}
@@ -63,6 +62,7 @@ function Composer({ send }: { send(msg: ClientMessage): void }) {
         <input
           className="input"
           placeholder="Clue word"
+          aria-label="Clue word"
           value={word}
           maxLength={30}
           autoComplete="off"
@@ -71,6 +71,7 @@ function Composer({ send }: { send(msg: ClientMessage): void }) {
         />
         <Stepper
           value={unlimited ? '∞' : count}
+          label="clue number"
           onMinus={() => setCount((c) => Math.max(0, c - 1))}
           onPlus={() => setCount((c) => Math.min(9, c + 1))}
           minusDisabled={unlimited || count <= 0}
@@ -106,13 +107,20 @@ export default function Table({ view, send }: Props) {
   const myTurn = view.me.team !== null && view.me.team === turn.team;
   const iAmSpy = view.me.isSpymaster && myTurn;
   const iAmGuesser = !view.me.isSpymaster && myTurn;
-  const history = turn.clue ? view.clues!.slice(0, -1) : (view.clues ?? []);
+  const history = useMemo(
+    () => (turn.clue ? view.clues!.slice(0, -1) : (view.clues ?? [])),
+    [turn.clue, view.clues],
+  );
   const guessesText =
     turn.guessesLeft === null
       ? turn.clue
         ? 'unlimited guesses'
         : ''
       : `${turn.guessesLeft} ${turn.guessesLeft === 1 ? 'guess' : 'guesses'} left`;
+  // Stable identities so CountdownRing effects don't resubscribe every render.
+  const handleExpire = useCallback(() => send({ t: 'passTurn' }), [send]);
+  const handleTick = useCallback(() => playSound('tick'), []);
+  const handleGuess = useCallback((i: number) => send({ t: 'guess', cardIndex: i }), [send]);
 
   return (
     <div className="app">
@@ -157,11 +165,7 @@ export default function Table({ view, send }: Props) {
       <m.div className="card" variants={staggerParent} initial="hidden" animate="show">
         <Board
           cards={view.cards ?? []}
-          onGuess={
-            view.phase === 'guessing' && iAmGuesser
-              ? (i) => send({ t: 'guess', cardIndex: i })
-              : undefined
-          }
+          onGuess={view.phase === 'guessing' && iAmGuesser ? handleGuess : undefined}
         />
         {view.phase === 'guessing' && iAmGuesser && (
           <m.button
@@ -190,11 +194,12 @@ export default function Table({ view, send }: Props) {
 
       {view.turnEndsAt !== undefined && (
         <CountdownRing
+          key={view.turnEndsAt}
           endsAt={view.turnEndsAt}
           totalSeconds={view.turnDurationSec ?? 0}
           size={104}
-          onExpire={() => send({ t: 'passTurn' })}
-          onTick={() => playSound('tick')}
+          onExpire={handleExpire}
+          onTick={handleTick}
         />
       )}
 

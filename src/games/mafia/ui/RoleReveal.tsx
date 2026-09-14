@@ -41,7 +41,7 @@ export default function RoleReveal({ view, send }: Props) {
               <span className="flip-mark">?</span>
               <p>{flipped ? 'Revealed' : 'Tap to reveal'}</p>
             </span>
-            <span className="flip-face flip-front">
+            <span className="flip-face flip-front" aria-hidden={!flipped}>
               <span className={`role-title ${info.cssClass}`}>{info.label}</span>
               <span className="muted flip-blurb">{info.blurb}</span>
               {view.mafiaTeammates && view.mafiaTeammates.length > 0 && (
@@ -69,6 +69,16 @@ export default function RoleReveal({ view, send }: Props) {
               ? `Waiting for others (${readyCount}/${eligible})…`
               : 'Got it — hide my role'}
         </m.button>
+        {view.me.isHost && readyCount < eligible && (
+          <m.button
+            className="btn btn-ghost btn-small"
+            onClick={() => send({ t: 'advance' })}
+            variants={fadeUp}
+            whileTap={{ scale: 0.97 }}
+          >
+            Stalled? Start the night now ({readyCount}/{eligible} ready)
+          </m.button>
+        )}
       </m.div>
     </div>
   );

@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { AnimatePresence, m } from 'motion/react';
 import { suggestConfig } from '@/games/mafia/engine/engine';
 import { ClientMessage, PlayerView } from '@/games/mafia/engine/types';
@@ -33,7 +34,12 @@ export default function Lobby({ view, roomCode, send }: Props) {
   const villagers = Math.max(0, town - Math.min(specials, town));
   const canStart = n >= 3;
 
-  const inviteLink = `${location.origin}${location.pathname}#/mafia?join=${roomCode}`;
+  // Derive the game path from the current hash so a slug rename in
+  // registry.ts can't silently break invites/QRs.
+  const inviteLink = useMemo(() => {
+    const hashBase = location.hash.split('?')[0].replace(/^#/, '') || '/mafia';
+    return `${location.origin}${location.pathname}#${hashBase}?join=${roomCode}`;
+  }, [roomCode]);
 
   const setDiscussion = (seconds: number) =>
     send({ t: 'setConfig', config: { ...config, discussionSeconds: seconds } });
@@ -59,8 +65,8 @@ export default function Lobby({ view, roomCode, send }: Props) {
                 key={p.id}
                 className={`player-row${p.connected ? '' : ' player-offline'}`}
                 variants={fadeUp}
+                // Transform/opacity only — no `layout` FLIP measurement per row.
                 exit={{ opacity: 0, x: -20 }}
-                layout
               >
                 <span>
                   <span className="avatar">{p.avatar}</span>
@@ -72,6 +78,7 @@ export default function Lobby({ view, roomCode, send }: Props) {
                   {isHost && p.id !== view.me.id && (
                     <button
                       className="btn btn-ghost btn-mini"
+                      aria-label={`Remove ${p.name}`}
                       onClick={() => send({ t: 'remove', targetId: p.id })}
                     >
                       Remove
@@ -91,9 +98,10 @@ export default function Lobby({ view, roomCode, send }: Props) {
         {isHost ? (
           <>
             <m.div className="stepper-row" variants={fadeUp}>
-              <span>Mafia</span>
+              <span id="mafia-count-label">Mafia</span>
               <Stepper
                 value={mafia}
+                label="mafia count"
                 onMinus={() => setMafia(-1)}
                 onPlus={() => setMafia(1)}
                 minusDisabled={mafia <= 1}

@@ -37,7 +37,8 @@ export default function MafiaGame({ params }: GameProps) {
 
   const { view } = session;
   useMafiaSounds(view);
-  useWakeLock(view !== null);
+  // Hold the lock only once play starts — the lobby is idle by design.
+  useWakeLock(view !== null && view.phase !== 'lobby');
 
   if (!view) {
     const profile = loadProfile();
@@ -53,6 +54,7 @@ export default function MafiaGame({ params }: GameProps) {
         onJoin={session.joinGame}
         onRejoin={session.rejoin}
         onForgetSession={session.forgetSession}
+        onDismissError={session.dismissError}
       />
     );
   }
@@ -84,11 +86,7 @@ export default function MafiaGame({ params }: GameProps) {
       break;
   }
 
-  const showDeadBanner =
-    !view.me.alive &&
-    view.phase !== 'night' &&
-    view.phase !== 'voting' &&
-    view.phase !== 'gameOver';
+  const showDeadBanner = !view.me.alive && view.phase !== 'gameOver';
 
   let phaseLabel = '';
   if (view.round > 0 && view.phase !== 'lobby' && view.phase !== 'roleReveal') {
@@ -141,9 +139,9 @@ export default function MafiaGame({ params }: GameProps) {
         <div className="banner-dead">You were eliminated — you're now spectating.</div>
       )}
       <Toast message={session.error} onDismiss={session.dismissError} />
-      <AnimatePresence mode="wait" initial={false}>
+      <AnimatePresence initial={false}>
         <m.div
-          key={view.phase}
+          key={`${view.phase}-${view.round}`}
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -12 }}

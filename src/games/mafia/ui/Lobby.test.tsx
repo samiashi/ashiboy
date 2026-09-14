@@ -123,7 +123,7 @@ describe('Lobby', () => {
     const send = vi.fn();
     render(<Lobby view={lobbyView('h')} roomCode="ABC123" send={send} />);
 
-    const removes = screen.getAllByRole('button', { name: 'Remove' });
+    const removes = screen.getAllByRole('button', { name: /Remove/ });
     expect(removes).toHaveLength(3); // everyone except the host
     await user.click(removes[0]);
     expect(send).toHaveBeenCalledWith({ t: 'remove', targetId: 'a' });

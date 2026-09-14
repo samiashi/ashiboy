@@ -13,6 +13,7 @@ interface Props {
   onJoin(code: string, name: string, avatar: string): void;
   onRejoin(session: StoredSession): void;
   onForgetSession(): void;
+  onDismissError?(): void;
 }
 
 /** Mafia entry screen — words and rules live here, structure is shared. */

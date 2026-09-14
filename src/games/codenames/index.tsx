@@ -33,7 +33,8 @@ export default function CodenamesGame({ params }: GameProps) {
 
   const { view } = session;
   useCodenamesSounds(view);
-  useWakeLock(view !== null);
+  // Hold the lock only once play starts — the lobby is idle by design.
+  useWakeLock(view !== null && view.phase !== 'lobby');
 
   if (!view) {
     const profile = loadProfile();
@@ -49,6 +50,7 @@ export default function CodenamesGame({ params }: GameProps) {
         onJoin={session.joinGame}
         onRejoin={session.rejoin}
         onForgetSession={session.forgetSession}
+        onDismissError={session.dismissError}
       />
     );
   }
@@ -110,9 +112,16 @@ export default function CodenamesGame({ params }: GameProps) {
         onToggleMute={session.toggleMute}
       />
       <Toast message={session.error} onDismiss={session.dismissError} />
-      <AnimatePresence mode="wait" initial={false}>
+      <AnimatePresence initial={false}>
         <m.div
-          key={view.phase}
+          // Stable across guesses — remount only on phase/team/clue changes so
+          // correct guesses update the board in place instead of replaying the
+          // whole enter/exit + stagger sequence.
+          key={
+            view.phase === 'gameOver'
+              ? 'gameOver'
+              : `${view.phase}-${view.turn?.team}-${view.turn?.clue?.word ?? 'noclue'}`
+          }
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -12 }}

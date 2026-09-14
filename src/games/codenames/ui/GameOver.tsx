@@ -19,6 +19,7 @@ function teamLabel(team: Team): string {
 export default function GameOver({ view, send }: Props) {
   const winner = view.winner ?? 'red';
   const hostName = view.players.find((p) => p.isHost)?.name ?? 'the host';
+  const assassinHit = (view.cards ?? []).some((c) => c.kind === 'assassin' && c.revealed);
 
   return (
     <div className="app">
@@ -38,13 +39,34 @@ export default function GameOver({ view, send }: Props) {
           animate={{ opacity: 1 }}
           transition={{ delay: 0.25, duration: 0.4 }}
         >
-          All {teamLabel(winner).toLowerCase()} agents contacted. Case closed.
+          {assassinHit
+            ? `The assassin was hit — ${teamLabel(winner).toLowerCase()} wins by default.`
+            : `All ${teamLabel(winner).toLowerCase()} agents contacted. Case closed.`}
         </m.p>
       </div>
 
+      {view.cards && view.cards.length > 0 && (
+        <m.div className="card" variants={staggerParent} initial="hidden" animate="show">
+          <m.h2 className="section-title" variants={fadeUp}>
+            Full key
+          </m.h2>
+          <div className="board">
+            {view.cards.map((c, i) => (
+              <div
+                key={i}
+                className={`word-card${c.revealed && c.kind ? ` word-covered-${c.kind}` : c.kind ? ` word-key-${c.kind}` : ''}`}
+                aria-label={c.kind ? `${c.word}, ${c.kind}` : c.word}
+              >
+                {c.word}
+              </div>
+            ))}
+          </div>
+        </m.div>
+      )}
+
       <m.div className="card" variants={staggerParent} initial="hidden" animate="show">
         <m.h2 className="section-title" variants={fadeUp}>
-          Full key
+          Teams
         </m.h2>
         <ul className="player-list">
           {view.players.map((p) => (

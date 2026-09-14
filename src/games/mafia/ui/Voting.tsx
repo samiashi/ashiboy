@@ -1,6 +1,6 @@
 import { m } from 'motion/react';
 import { ClientMessage, PlayerView } from '@/games/mafia/engine/types';
-import { fadeUp, popIn, springGentle, staggerParent } from '@/anim';
+import { fadeUp, springGentle, staggerParent } from '@/anim';
 
 interface Props {
   view: PlayerView;
@@ -36,22 +36,24 @@ export default function Voting({ view, send }: Props) {
             <m.p className="muted center" variants={fadeUp}>
               Who should be eliminated? Votes are public.
             </m.p>
-            <m.div className="grid" variants={staggerParent}>
+            <m.div className="grid">
               {candidates.map((p) => (
                 <m.button
                   key={p.id}
+                  type="button"
                   className={`chip${view.myVote === p.id ? ' chip-selected' : ''}`}
+                  aria-pressed={view.myVote === p.id}
                   onClick={() => send({ t: 'vote', targetId: p.id })}
-                  variants={popIn}
                   whileTap={{ scale: 0.94 }}
                 >
                   <span className="avatar">{p.avatar}</span> {p.name}
                 </m.button>
               ))}
               <m.button
+                type="button"
                 className={`chip chip-abstain${view.myVote === null ? ' chip-selected' : ''}`}
+                aria-pressed={view.myVote === null}
                 onClick={() => send({ t: 'vote', targetId: null })}
-                variants={popIn}
                 whileTap={{ scale: 0.94 }}
               >
                 Abstain
@@ -116,8 +118,9 @@ export default function Voting({ view, send }: Props) {
                   <div className="tally-track">
                     <m.div
                       className="tally-fill"
-                      initial={{ width: 0 }}
-                      animate={{ width: `${top > 0 ? (count / top) * 100 : 0}%` }}
+                      style={{ transformOrigin: 'left center' }}
+                      initial={{ scaleX: 0 }}
+                      animate={{ scaleX: top > 0 ? count / top : 0 }}
                       transition={springGentle}
                     />
                   </div>

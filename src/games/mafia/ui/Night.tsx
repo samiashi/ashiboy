@@ -1,6 +1,6 @@
 import { m } from 'motion/react';
 import { ClientMessage, PlayerView } from '@/games/mafia/engine/types';
-import { fadeUp, popIn, staggerParent } from '@/anim';
+import { fadeUp, staggerParent } from '@/anim';
 import { ROLE_INFO } from '@/games/mafia/ui/roles';
 
 interface Props {
@@ -94,9 +94,10 @@ export default function Night({ view, send }: Props) {
             return (
               <m.button
                 key={id}
+                type="button"
                 className={`chip${view.myNightPick === id ? ' chip-selected' : ''}`}
+                aria-pressed={view.myNightPick === id}
                 onClick={() => send({ t: 'nightAct', targetId: id })}
-                variants={popIn}
                 whileTap={{ scale: 0.94 }}
               >
                 <span>

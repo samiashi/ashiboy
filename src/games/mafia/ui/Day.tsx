@@ -1,3 +1,4 @@
+import { useCallback, useMemo } from 'react';
 import { m } from 'motion/react';
 import { ClientMessage, PlayerView } from '@/games/mafia/engine/types';
 import { fadeUp, springGentle, staggerParent } from '@/anim';
@@ -11,10 +12,16 @@ interface Props {
 
 /** Handles both 'dayReveal' (who died last night) and 'discussion' phases. */
 export default function Day({ view, send }: Props) {
-  const nameOf = (id?: string) => view.players.find((p) => p.id === id)?.name ?? '—';
+  const nameOf = useCallback(
+    (id?: string) => view.players.find((p) => p.id === id)?.name ?? '—',
+    [view.players],
+  );
   const hostName = view.players.find((p) => p.isHost)?.name ?? 'the host';
   const diedId = view.lastNight?.diedId;
-  const alive = view.players.filter((p) => p.alive);
+  const alive = useMemo(() => view.players.filter((p) => p.alive), [view.players]);
+  // Stable identities so CountdownRing effects don't resubscribe every render.
+  const handleExpire = useCallback(() => send({ t: 'advance' }), [send]);
+  const handleTick = useCallback(() => playSound('tick'), []);
 
   const investigationCard = view.investigation && (
     <m.div
@@ -93,11 +100,12 @@ export default function Day({ view, send }: Props) {
         {view.discussionEndsAt !== undefined && (
           <m.div variants={fadeUp}>
             <CountdownRing
+              key={view.discussionEndsAt}
               endsAt={view.discussionEndsAt}
               totalSeconds={view.discussionDurationSec ?? 0}
               size={128}
-              onExpire={() => send({ t: 'advance' })}
-              onTick={() => playSound('tick')}
+              onExpire={handleExpire}
+              onTick={handleTick}
             />
             {view.me.isHost && (
               <div className="center" style={{ marginTop: 10 }}>
@@ -113,11 +121,16 @@ export default function Day({ view, send }: Props) {
         )}
         <ul className="player-list">
           {alive.map((p) => (
-            <m.li key={p.id} className="player-row" variants={fadeUp}>
+            <m.li
+              key={p.id}
+              className={`player-row${p.connected ? '' : ' player-offline'}`}
+              variants={fadeUp}
+            >
               <span>
                 <span className="avatar">{p.avatar}</span>
                 {p.name}
                 {p.id === view.me.id && <span className="muted"> (you)</span>}
+                {!p.connected && <span className="muted"> (offline)</span>}
               </span>
             </m.li>
           ))}
