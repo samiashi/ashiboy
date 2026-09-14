@@ -5,8 +5,9 @@
 <img src="https://readme-typing-svg.demolab.com?font=Fira+Code&weight=600&size=21&duration=2800&pause=1200&color=C9A227&center=true&vCenter=true&width=620&lines=No+moderator.+No+mercy.;Everyone+plays%2C+everyone+lies.;One+room.+One+phone+each." alt="No moderator. No mercy. Everyone plays, everyone lies." />
 
 **Ashiboy** is a website for hosting party games you play in the room,
-straight from your phones. **Mafia** and **Codenames** live here; the site is
-built so more games can join the table as self-contained modules.
+straight from your phones. **Mafia**, **Codenames**, **Mystery**, and
+**Hot Take** live here; the site is built so more games can join the table
+as self-contained modules.
 
 There is **no backend and no gamemaster**. One player's browser hosts the game
 and everyone else joins from their own phone with a room code.
@@ -90,6 +91,20 @@ src/
     ├── ui/                 # Home, Lobby (teams), Table (clues + board), GameOver
     ├── sound.ts            # its own synthesized sound set
     └── codenames.css       # game styles (loaded only with the game bundle)
+└── games/mystery/          # co-op whodunit in three mini-games (same architecture)
+    ├── index.tsx           # game root: session + screen switching
+    ├── engine/             # pure rules + original case file(s) + tests
+    ├── net/                # PeerJS host/client + localStorage identity
+    ├── ui/                 # Home, Lobby, Briefing, Search, Alibis, Verdict, GameOver
+    ├── sound.ts            # its own synthesized sound set
+    └── mystery.css         # game styles (loaded only with the game bundle)
+└── games/hottake/          # comedy quip battle (same architecture)
+    ├── index.tsx           # game root: session + screen switching
+    ├── engine/             # pure rules + original prompt pack + tests
+    ├── net/                # PeerJS host/client + localStorage identity
+    ├── ui/                 # Home, Lobby, Answering, Voting, Scoreboard, GameOver
+    ├── sound.ts            # its own synthesized sound set
+    └── hottake.css         # game styles (loaded only with the game bundle)
 ```
 
 Shared across games: hub shell, `anim` motion presets, and player identity
@@ -129,7 +144,7 @@ every game, rethemable through CSS custom properties.
 
 ## 📋 Status
 
-Implemented and verified (`tsc`, 134 tests, production build all green):
+Implemented and verified (`tsc`, 217 tests, production build all green):
 
 - 🃏 Full moderator-free Mafia flow: lobby → roles → night → day → vote → win,
   with 1–4+ mafia, optional detective and doctor, suggested setups per player
@@ -160,6 +175,15 @@ Implemented and verified (`tsc`, 134 tests, production build all green):
   dealing from an original 300-word list, clue composer (0–9 + ∞), tap-to-guess
   board with plus-one/assassin/opponent-win rules, turn timer, rematch with
   fresh boards.
+- 🔍 **Mystery is live:** co-op whodunit for 1–20 investigators — briefing,
+  crime-scene search (shared tokens, one locked room), alibi pressing
+  (shared pressure, more suspects than pressure), and a shared
+  suspect + weapon + scene verdict with 1–3 star scoring and one-tap rematch.
+  Ships with three original case files; new cases are data, not code.
+- 🎤 **Hot Take is live:** comedy quip battle for 3–12 writers — one absurd
+  prompt per round for the whole table, sealed answers, anonymous ballot
+  (no self-votes), 100 points per vote, podium with full history, one-tap
+  rematch. Ships with an original 48-prompt pack.
 
 Known limitations (deliberate for now):
 
@@ -172,7 +196,8 @@ Known limitations (deliberate for now):
 <details>
 <summary><strong>Ideas for next steps</strong> (not started)</summary>
 
-- Game #3 on the hub via `src/games/<name>/` + one registry line.
+- Game #5 on the hub via `src/games/<name>/` + one registry line.
+- More Mystery case files (the lobby picker takes new entries with no code changes).
 - Host resume (persist state so a dropped host can reclaim the room).
 - Custom rule toggles (e.g. doctor self-save limits, majority-vs-plurality lynch).
 
