@@ -70,16 +70,16 @@ function TeamColumn({
           {members.map((p) => (
             <m.li
               key={p.id}
-              className={`player-row${p.connected ? '' : ' player-offline'}`}
+              className={`player-row team-seat${p.connected ? '' : ' player-offline'}`}
               variants={fadeUp}
               exit={{ opacity: 0, x: -20 }}
             >
-              <span>
+              <span className="seat-name">
                 <span className="avatar">{p.avatar}</span>
-                {p.name}
-                {p.id === me.id && <span className="muted"> (you)</span>}
+                <span className="seat-name-text">{p.name}</span>
+                {p.id === me.id && <span className="muted">(you)</span>}
               </span>
-              <span className="row-end">
+              <span className="row-end seat-actions">
                 {(p.id === me.id || me.isHost) && (
                   <button
                     className={`star-btn${p.isSpymaster ? ' star-btn-on' : ''}`}
@@ -108,7 +108,7 @@ function TeamColumn({
         </AnimatePresence>
       </ul>
       <p className="muted team-spy-note">
-        {spy ? `Spymaster: ${spy.name}` : 'Needs a spymaster — star yourself'}
+        {spy ? `Spymaster: ${spy.name}` : 'Needs a spymaster — star a seat'}
       </p>
       {me.team !== team ? (
         <button

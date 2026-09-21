@@ -52,10 +52,12 @@ name + avatar are remembered from Mafia, never asked twice.
 - Room code, QR, live roster — same components/patterns as Mafia.
 - **Two team columns (Red / Blue).** Players tap to join a side; anyone can
   switch freely until start. A **randomize** button splits evenly.
-- **Spymaster = a star toggle on your own seat**, one per team. Start is
-  blocked until every seat has a team and each team has exactly one spymaster
-  and at least one operative (minimum 4 players total — enforced in both the
-  engine and the lobby).
+- **Spymaster = a star toggle on your own seat**, one per team. Starring a
+  second player on a team automatically unseats the old spymaster, so rotating
+  the role (including after a game) is a single tap. Start is blocked until
+  every seat has a team and each team has exactly one spymaster and at least
+  one operative (minimum 4 players total — enforced in both the engine and the
+  lobby).
 - Host config: **turn timer** (Off / 1 / 2 / 3 / 5 min, default 3:00 — same
   component pattern as Mafia's discussion timer). Nothing else to configure.
 - Host can remove wrong seats (same as Mafia). No one joins after the deal.
@@ -78,7 +80,10 @@ name + avatar are remembered from Mafia, never asked twice.
 - **Guess phase (their operatives):** discuss out loud, then **any operative
   taps a card = a guess**, revealed to all instantly with a flip. Correct →
   keep going (up to number + 1, unlimited on 0/∞). Wrong → turn passes.
-  Minimum one guess before the **End turn** button (any operative) enables.
+  **Unused guesses do not carry over** — the +1 is the catch-up mechanism, so
+  the UI says so under the board and the clue banner spells out
+  `clue N + 1 bonus`. Minimum one guess before the **End turn** button (any
+  operative) enables.
 - Turn passes automatically on: wrong guess, guess limit reached, either win
   condition, timer expiry, or End turn. A small "Their turn…" state shows on
   the waiting team's phones (with the current clue visible for spectatorship).
@@ -92,8 +97,10 @@ name + avatar are remembered from Mafia, never asked twice.
   immediately (even mid-opponent-turn); assassin → guesser's team loses
   immediately. Winner banner + full key reveal + fanfare.
 - **Rematch in one tap:** same teams and spymasters, fresh board and fresh
-  starting team. Back-to-lobby to reshuffle teams or swap spymasters (rematch
-  falls back to the lobby only when the teams no longer satisfy start rules).
+  starting team. A second host action, **Change spymasters**, reopens the
+  lobby with teams intact so anyone can take the star; the host then deals a
+  fresh board. Back-to-lobby also happens automatically from rematch when the
+  teams no longer satisfy start rules.
 - Ejected seats have their token revoked and can't silently reclaim themselves;
   full rooms get an explicit "Room is full." error instead of a stuck join.
 
@@ -116,10 +123,13 @@ name + avatar are remembered from Mafia, never asked twice.
   per phase), own CSS + sounds. Shared across games: hub shell, `anim`
   presets, profile storage (`ashiboy-profile`); new session key
   (`ashiboy-codenames-session`). No shared game-logic kit yet.
-- **Word list:** original ~300 common nouns, single words, family-friendly,
-  no proper nouns — written fresh at build time, never CGE's list. Sample
-  tone: `anchor, boots, comet, drift, ember, flask, grove, lantern, meadow,
-needle, orchard, paddle, quartz, ridge, saddle, thunder, velvet, wagon`.
+- **Word list:** a generated list of ~950 easy, fun, mostly concrete nouns
+  (`src/games/codenames/engine/words.ts`). Built by
+  `scripts/generate-words.mjs` from `friendly-words` (Glitch, MIT) filtered by
+  the frequency ranking in `popular-english-words` (ISC) and a hand-kept
+  blocklist of proper nouns, jargon, and dull/abstract words — never CGE's
+  list. Regenerate with `npm run words`; tests guard format, size, and
+  singular/plural collisions.
 - ** tap = commit** for guesses (fast, party-friendly); mis-tap risk accepted
   and stated in How to Play.
 - **No auto-enforcement of clue legality** in v1 (guidance text + social
@@ -141,6 +151,9 @@ needle, orchard, paddle, quartz, ridge, saddle, thunder, velvet, wagon`.
 - Disconnect mid-turn → team continues / host passes; rejoin restores seat + key.
 - Rematch → new board, cleared guesses, same teams (disconnected seats kept
   so a late rejoin still finds its chair), round reset.
+- Change spymasters → back to the lobby from game over with teams and config
+  intact; starring a new player swaps out the old spymaster in one tap;
+  dealing again starts clean.
 
 ## Limitations inventory
 
@@ -152,6 +165,5 @@ screens derive from it — peekable via devtools, fine for bragging rights).
 
 - No Duet/co-op mode, no Pictures variant, fixed 5×5.
 - No automatic invalid-clue detection or voiding (social rule).
-- English-only, original word list (no official CGE content).
-- Spymasters fixed per game (rotate via rematch → lobby).
+- English-only, generated easy word list (no official CGE content).
 - No in-app chat — table talk is the game.

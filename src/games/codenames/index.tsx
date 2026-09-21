@@ -74,7 +74,9 @@ export default function CodenamesGame({ params }: GameProps) {
     view.phase === 'lobby'
       ? ''
       : view.phase === 'gameOver'
-        ? ` · ${view.winner === 'red' ? 'Red' : 'Blue'} wins`
+        ? view.winner
+          ? ` · ${view.winner === 'red' ? 'Red' : 'Blue'} wins`
+          : ''
         : ` · ${view.turn?.team === 'red' ? 'Red' : 'Blue'} to play`;
 
   const announcement = (() => {
@@ -96,7 +98,11 @@ export default function CodenamesGame({ params }: GameProps) {
           : `The other team is guessing. Their clue is ${clueText}.`;
       }
       case 'gameOver':
-        return view.winner === 'red' ? 'Red wins.' : 'Blue wins.';
+        return view.winner
+          ? view.winner === 'red'
+            ? 'Red wins.'
+            : 'Blue wins.'
+          : 'Game over. The result did not come through.';
     }
   })();
 

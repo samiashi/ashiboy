@@ -28,9 +28,14 @@ export default function GameOver({ view, send }: Props) {
           <h1 className="title-sm">Game over</h1>
           <p className="muted">The result didn&apos;t come through — ask the host to deal again.</p>
           {view.me.isHost && (
-            <button className="btn btn-primary" onClick={() => send({ t: 'playAgain' })}>
-              Rematch — same teams
-            </button>
+            <div className="gameover-actions">
+              <button className="btn btn-primary" onClick={() => send({ t: 'playAgain' })}>
+                Rematch — same teams
+              </button>
+              <button className="btn btn-ghost" onClick={() => send({ t: 'toLobby' })}>
+                Change spymasters
+              </button>
+            </div>
           )}
         </div>
       </div>
@@ -100,18 +105,38 @@ export default function GameOver({ view, send }: Props) {
           ))}
         </ul>
         {view.me.isHost ? (
-          <m.button
-            className="btn btn-primary"
-            onClick={() => send({ t: 'playAgain' })}
-            variants={popIn}
-            whileTap={{ scale: 0.97 }}
+          <m.div
+            className="gameover-actions"
+            variants={staggerParent}
+            initial="hidden"
+            animate="show"
           >
-            Rematch — same teams
-          </m.button>
+            <m.button
+              className="btn btn-primary"
+              onClick={() => send({ t: 'playAgain' })}
+              variants={popIn}
+              whileTap={{ scale: 0.97 }}
+            >
+              Rematch — same teams
+            </m.button>
+            <m.button
+              className="btn btn-ghost"
+              onClick={() => send({ t: 'toLobby' })}
+              variants={popIn}
+              whileTap={{ scale: 0.97 }}
+            >
+              Change spymasters
+            </m.button>
+          </m.div>
         ) : (
-          <m.p className="muted center" variants={fadeUp}>
-            Waiting for {hostName} to deal again…
-          </m.p>
+          <>
+            <m.p className="muted center" variants={fadeUp}>
+              Waiting for {hostName} to deal again…
+            </m.p>
+            <m.p className="muted center gameover-hint" variants={fadeUp}>
+              Want a new spymaster? The host can reopen the teams screen.
+            </m.p>
+          </>
         )}
       </m.div>
     </div>

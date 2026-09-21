@@ -77,18 +77,77 @@
   white-space: nowrap;
 }
 
+/* ---------- lobby seats ----------
+   Team columns are narrow on phones, so each seat is its own wrapping flex
+   row: the name truncates, then star / host pill / remove wrap to a second
+   line instead of spilling out of the column. */
+
+.team-seat {
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  padding: 10px 2px;
+}
+
+.team-seat .seat-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex: 1 1 130px;
+}
+
+.seat-name-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.seat-actions {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  margin-left: auto;
+}
+
+.seat-actions .pill {
+  padding: 4px 9px;
+  font-size: 0.66rem;
+}
+
+.seat-actions .btn-mini {
+  min-height: 32px;
+  padding: 4px 10px;
+  font-size: 0.76rem;
+}
+
 .star-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 50%;
   background: none;
-  border: none;
   cursor: pointer;
-  font-size: 1.05rem;
-  padding: 2px 4px;
+  font-size: 1.15rem;
+  line-height: 1;
   color: var(--muted);
   opacity: 0.6;
   transition:
     opacity 0.14s ease,
-    transform 0.1s ease;
+    transform 0.1s ease,
+    border-color 0.14s ease,
+    background 0.14s ease;
   flex-shrink: 0;
+}
+
+.star-btn:hover {
+  border-color: var(--border-strong);
+  background: rgba(201, 162, 39, 0.08);
+  opacity: 1;
 }
 
 .star-btn:active {
@@ -244,6 +303,12 @@ button.word-card:disabled {
   color: var(--accent);
 }
 
+.guess-rule {
+  margin: 12px 0 0;
+  font-size: 0.85rem;
+  text-align: center;
+}
+
 /* ---------- clue ---------- */
 
 .clue-banner {
@@ -313,6 +378,16 @@ button.word-card:disabled {
 }
 
 /* ---------- game over ---------- */
+
+.gameover-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.gameover-hint {
+  font-size: 0.85rem;
+}
 
 .gameover-red {
   border-color: rgba(229, 72, 77, 0.55);

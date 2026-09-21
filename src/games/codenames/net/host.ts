@@ -59,6 +59,8 @@ export function toAction(playerId: string, msg: ClientMessage): Action | null {
       return { t: 'extendTurn', id: playerId };
     case 'playAgain':
       return { t: 'playAgain', id: playerId };
+    case 'toLobby':
+      return { t: 'toLobby', id: playerId };
     default:
       return null;
   }

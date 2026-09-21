@@ -69,7 +69,8 @@ export type Action =
   | { t: 'endTurn'; id: string }
   | { t: 'passTurn'; id: string }
   | { t: 'extendTurn'; id: string }
-  | { t: 'playAgain'; id: string };
+  | { t: 'playAgain'; id: string }
+  | { t: 'toLobby'; id: string };
 
 // ---------- wire protocol ----------
 
@@ -87,7 +88,8 @@ export type ClientMessage =
   | { t: 'endTurn' }
   | { t: 'passTurn' }
   | { t: 'extendTurn' }
-  | { t: 'playAgain' };
+  | { t: 'playAgain' }
+  | { t: 'toLobby' };
 
 export type HostMessage =
   | { t: 'welcome'; playerId: string; token: string }

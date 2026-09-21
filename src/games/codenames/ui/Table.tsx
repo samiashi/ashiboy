@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useState } from 'react';
 import { m } from 'motion/react';
+import { guessLimit } from '@/games/codenames/engine/engine';
 import { ClientMessage, PlayerView, Team, ViewCard } from '@/games/codenames/engine/types';
 import { fadeUp, staggerParent } from '@/anim';
 import { playSound } from '@/games/codenames/sound';
@@ -111,12 +112,18 @@ export default function Table({ view, send }: Props) {
     () => (turn.clue ? view.clues!.slice(0, -1) : (view.clues ?? [])),
     [turn.clue, view.clues],
   );
-  const guessesText =
-    turn.guessesLeft === null
-      ? turn.clue
-        ? 'unlimited guesses'
-        : ''
-      : `${turn.guessesLeft} ${turn.guessesLeft === 1 ? 'guess' : 'guesses'} left`;
+  const limit = guessLimit(turn.clue);
+  // Spell out the plus-one so nobody expects unused guesses to roll over:
+  // the official rule is that they are lost when the turn ends.
+  const guessesText = !turn.clue
+    ? ''
+    : limit === null
+      ? turn.guessesMade > 0
+        ? `${turn.guessesMade} guessed · unlimited`
+        : 'Unlimited guesses while you stay on your color'
+      : turn.guessesMade === 0
+        ? `Up to ${limit} guesses — clue ${turn.clue.number} + 1 bonus`
+        : `${turn.guessesLeft} of ${limit} guesses left`;
   // Stable identities so CountdownRing effects don't resubscribe every render.
   const handleExpire = useCallback(() => send({ t: 'passTurn' }), [send]);
   const handleTick = useCallback(() => playSound('tick'), []);
@@ -167,6 +174,11 @@ export default function Table({ view, send }: Props) {
           cards={view.cards ?? []}
           onGuess={view.phase === 'guessing' && iAmGuesser ? handleGuess : undefined}
         />
+        {view.phase === 'guessing' && (
+          <m.p className="guess-rule muted" variants={fadeUp}>
+            A wrong card ends the turn right away — unused guesses don’t carry over.
+          </m.p>
+        )}
         {view.phase === 'guessing' && iAmGuesser && (
           <m.button
             className="btn btn-ghost"

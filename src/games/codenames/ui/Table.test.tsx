@@ -100,6 +100,25 @@ describe('Codenames Table', () => {
     expect(screen.getByRole('button', { name: /Send clue/ })).toBeDisabled();
   });
 
+  it('spells out the plus-one and warns that unused guesses are lost', () => {
+    const view = tableView(
+      {
+        phase: 'guessing',
+        turn: {
+          team: 'red',
+          clue: { team: 'red', word: 'FRUIT', number: 2 },
+          guessesMade: 0,
+          guessesLeft: 3,
+        },
+      },
+      'a',
+    );
+    render(<Table view={view} send={vi.fn()} />);
+
+    expect(screen.getByText(/clue 2 \+ 1 bonus/)).toBeTruthy();
+    expect(screen.getByText(/unused guesses/)).toBeTruthy();
+  });
+
   it('operatives tap cards to guess, then end the turn', async () => {
     const user = userEvent.setup();
     const send = vi.fn();

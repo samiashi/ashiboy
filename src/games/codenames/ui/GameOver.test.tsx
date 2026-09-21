@@ -47,6 +47,15 @@ describe('Codenames GameOver', () => {
     await user.click(screen.getByRole('button', { name: 'Rematch — same teams' }));
     expect(send).toHaveBeenCalledWith({ t: 'playAgain' });
   });
+
+  it('lets the host rotate spymasters via the lobby', async () => {
+    const user = userEvent.setup();
+    const send = vi.fn();
+    render(<GameOver view={view} send={send} />);
+
+    await user.click(screen.getByRole('button', { name: 'Change spymasters' }));
+    expect(send).toHaveBeenCalledWith({ t: 'toLobby' });
+  });
 });
 
 describe('Codenames HowToPlay', () => {

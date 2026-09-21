@@ -59,6 +59,7 @@ npm run dev      # serves on the network — phones on the same WiFi can join
 npm test         # engine unit tests (vitest)
 npm run typecheck
 npm run build    # static output in dist/ — deploy anywhere (Netlify, GitHub Pages, …)
+npm run words    # regenerate the Codenames word list from its word libraries
 npm run check    # alias lint + prettier check
 npm run fix      # alias autofix + prettier write
 # CI (.github/workflows/ci.yml) runs lint, format check, typecheck, tests, and build on every push/PR.
@@ -86,7 +87,7 @@ src/
 │   └── mafia.css           # game styles (loaded only with the game bundle)
 └── games/codenames/        # team word-spy game (same architecture, own rules)
     ├── index.tsx           # game root: session + screen switching
-    ├── engine/             # pure rules + original 300-word list + tests
+    ├── engine/             # pure rules + generated easy word list + tests
     ├── net/                # PeerJS host/client + localStorage identity
     ├── ui/                 # Home, Lobby (teams), Table (clues + board), GameOver
     ├── sound.ts            # its own synthesized sound set
@@ -171,10 +172,11 @@ Implemented and verified (`tsc`, 217 tests, production build all green):
   that work offline, and `prefers-reduced-motion` support.
 - ♿ **Screen-reader announcements** of every phase change, and a wake lock so
   screens never sleep mid-game. UI screens covered by interaction tests.
-- 🕵️ **Codenames is live:** team lobby with spymaster starring, secret-key
-  dealing from an original 300-word list, clue composer (0–9 + ∞), tap-to-guess
-  board with plus-one/assassin/opponent-win rules, turn timer, rematch with
-  fresh boards.
+- 🕵️ **Codenames is live:** team lobby with spymaster starring (one tap swaps
+  the role), secret-key dealing from a generated ~950-word easy list, clue
+  composer (0–9 + ∞), tap-to-guess board with plus-one/assassin/opponent-win
+  rules, turn timer, rematch with fresh boards or a trip back to the lobby to
+  rotate spymasters.
 - 🔍 **Mystery is live:** co-op whodunit for 1–20 investigators — briefing,
   crime-scene search (shared tokens, one locked room), alibi pressing
   (shared pressure, more suspects than pressure), and a shared

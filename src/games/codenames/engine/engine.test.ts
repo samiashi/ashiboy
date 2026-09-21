@@ -109,6 +109,18 @@ describe('lobby setup', () => {
     expect(run(s, { t: 'randomize', id: 'p1' })).toBe(s);
   });
 
+  it('starring a teammate swaps the team spymaster in one tap', () => {
+    let s = makeLobby();
+    s = run(s, { t: 'setSpymaster', id: 'h', targetId: 'p1', value: true });
+    expect(s.players.filter((p) => p.team === 'red' && p.isSpymaster).map((p) => p.id)).toEqual([
+      'p1',
+    ]);
+    // The other team's spymaster is untouched.
+    expect(s.players.find((p) => p.id === 'p3')?.isSpymaster).toBe(true);
+    // Guests still can't re-star someone else's seat.
+    expect(run(s, { t: 'setSpymaster', id: 'p2', targetId: 'p1', value: false })).toBe(s);
+  });
+
   it('ignores joins after the deal', () => {
     let s = startGame();
     s = run(s, { t: 'join', id: 'late', name: 'Late', avatar: AVATAR, token: 'tok' });
@@ -367,6 +379,30 @@ describe('rejoin, remove, play again', () => {
     expect(s.players.map((p) => [p.id, p.team, p.isSpymaster])).toEqual(teamsBefore);
     expect(s.cards).toHaveLength(25);
     expect(s.winner).toBeUndefined();
+  });
+
+  it('the host can reopen the lobby from game over to rotate spymasters', () => {
+    let s = giveClue(startGame(), 'test', 1);
+    const [boom] = unrevealed(s, 'assassin');
+    s = run(s, { t: 'guess', id: operativeOf(s, s.turn.team), cardIndex: boom.i });
+    expect(s.phase).toBe('gameOver');
+    const before = s;
+    // Guests can't pull the room back to the lobby.
+    expect(run(s, { t: 'toLobby', id: 'p1' })).toBe(before);
+
+    s = run(s, { t: 'toLobby', id: 'h' });
+    expect(s.phase).toBe('lobby');
+    expect(s.cards).toEqual([]);
+    expect(s.winner).toBeUndefined();
+    expect(s.config).toEqual({ turnSeconds: 180 });
+    // Teams and spymasters survive so the host can adjust and deal again.
+    expect(s.players.find((p) => p.id === 'h')?.isSpymaster).toBe(true);
+    s = run(s, { t: 'setSpymaster', id: 'h', targetId: 'p2', value: true });
+    expect(s.players.filter((p) => p.team === 'red' && p.isSpymaster).map((p) => p.id)).toEqual([
+      'p2',
+    ]);
+    s = run(s, { t: 'start', id: 'h' });
+    expect(s.phase).toBe('clue');
   });
 });
 

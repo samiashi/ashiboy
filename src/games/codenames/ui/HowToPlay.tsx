@@ -30,7 +30,8 @@ export default function HowToPlay() {
           <li>
             <strong>Guesses.</strong> Discuss out loud, then tap cards one at a time. Your color
             keeps you going (up to the number + 1); a bystander or rival agent ends the turn — and
-            helps them.
+            helps them. Unused guesses don&apos;t carry over, so the +1 is how you catch up on words
+            you missed earlier.
           </li>
         </ul>
         <h3>Winning & losing</h3>

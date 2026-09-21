@@ -17,6 +17,7 @@ npm run fix          # lint:fix + format
 npm run typecheck    # tsc --noEmit (strict)
 npm run build        # typecheck + production build to dist/
 npm run icons        # regenerate PWA icons (scripts/generate-icons.mjs)
+npm run words        # regenerate Codenames' word list (scripts/generate-words.mjs)
 ```
 
 CI (`.github/workflows/ci.yml`) runs lint, format:check, typecheck, test, build
@@ -71,8 +72,11 @@ components only (wired in `main.tsx`).
   linter; extend it instead.
 - Never expose secret game state to clients — every new view field gets a
   privacy test proving who can (and cannot) see it.
-- Never copy publishers' content (CGE word lists, art, rule text) — the
-  word list, artwork, and How-to-Play copy are all originals; keep them so.
+- Never copy publishers' content (CGE word lists, art, rule text). Codenames'
+  word list is generated from permissively licensed word libraries by
+  `scripts/generate-words.mjs` — edit the script, never `words.ts` by hand,
+  and never paste a publisher's list. Artwork and How-to-Play copy stay
+  original.
 - Never edit `dist/` (build output). Never commit `node_modules`.
 - Do not commit or push unless explicitly asked.
 

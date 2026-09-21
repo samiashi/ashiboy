@@ -207,11 +207,18 @@ export function reduce(
       const target = findPlayer(state, action.targetId);
       if (!me || !target) return state;
       if (action.id !== action.targetId && !me.isHost) return state;
+      const value = !!action.value;
       return {
         ...state,
-        players: state.players.map((p) =>
-          p.id === target.id ? { ...p, isSpymaster: !!action.value } : p,
-        ),
+        // One spymaster per team: starring a teammate unseats the old one,
+        // so swapping the role after a game is a single tap.
+        players: state.players.map((p) => {
+          if (p.id === target.id) return { ...p, isSpymaster: value };
+          if (value && target.team !== null && p.team === target.team) {
+            return { ...p, isSpymaster: false };
+          }
+          return p;
+        }),
       };
     }
 
@@ -400,6 +407,23 @@ export function reduce(
           state.config.turnSeconds > 0 ? now + state.config.turnSeconds * 1000 : undefined,
         winner: undefined,
         players,
+      };
+    }
+
+    case 'toLobby': {
+      // Rotate spymasters / reshuffle seats after a game: back to the lobby
+      // with teams intact, key and result cleared.
+      const me = findPlayer(state, action.id);
+      if (!me?.isHost || !me.connected || state.phase !== 'gameOver') return state;
+      return {
+        ...state,
+        phase: 'lobby',
+        cards: [],
+        startingTeam: null,
+        turn: { team: 'red', clue: null, guessesMade: 0 },
+        clues: [],
+        turnEndsAt: undefined,
+        winner: undefined,
       };
     }
   }
